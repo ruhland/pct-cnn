@@ -1,0 +1,5 @@
+# CMake gen files
+**/Makefile
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/CMakeFiles
