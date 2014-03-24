@@ -1,5 +1,4 @@
-pct-cnn
-=======
+# Point Cloud Transformation via Coherent Nearest Neighbours
 
 point cloud transformation with coherent nearest neighbors
 
