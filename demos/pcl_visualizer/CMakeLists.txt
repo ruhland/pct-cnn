@@ -24,5 +24,4 @@ aux_source_directory(${PROJECT_SOURCE_DIR} PROJECT_SOURCES)
 message(STATUS "Found sources: ${PROJECT_SOURCES}")
 
 add_executable(pcl_visualizer_demo ${PROJECT_SOURCES})
-target_link_libraries(pcl_visualizer_demo
-    ${PCL_LIBRARIES})
+target_link_libraries(pcl_visualizer_demo ${PCL_LIBRARIES})

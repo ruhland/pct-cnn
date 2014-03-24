@@ -45,10 +45,11 @@ set(CMAKE_COLOR_MAKEFILE ON)
 
 set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(PROJECT_INCLUDE_DIR ${PROJECT_SOURCE_DIR})
-set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/build)
 
-set(EXECUTABLE_OUTPUT_DIR ${PROJECT_BINARY_DIR})
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+# Output directories for executables and libraries respectively.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_INCLUDE_DIR})
@@ -66,10 +67,12 @@ message(STATUS "PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 # ---------------------------------------------------------------------
 
 # Available components are:
+# --
 #  common kdtree octree search sample_consensus filters features io
 #  geometry visualization segmentation surface registration keypoints
 #  tracking apps app_modeler app_cloud_composer app_in_hand_scanner
 #  app_point_cloud_editor outofcore people
+# --
 set(PCL_COMPONENTS
     common
     kdtree
