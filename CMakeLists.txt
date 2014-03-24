@@ -72,8 +72,27 @@ message(STATUS "PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 #  app_point_cloud_editor outofcore people
 set(PCL_COMPONENTS
     common
+    kdtree
+    octree
+    search
+    sample_consensus
+    filters
+    features
     io
+    geometry
     visualization
+    segmentation
+    surface
+    registration
+    keypoints
+    tracking
+    apps
+    app_modeler
+    app_cloud_composer
+    app_in_hand_scanner
+    app_point_cloud_editor
+    outofcore
+    people
     )
 
 find_package(PCL 1.7 REQUIRED ${PCL_COMPONENTS})
