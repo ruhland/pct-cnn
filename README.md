@@ -13,3 +13,8 @@ For one session this can be done with:
 <pre>
 sudo modprobe -r gspca_kinect
 </pre>
+
+Resources
+------
+The RGB-D Object Dataset. A collection of various household object models.
+Available for non-commercial reseach/educational use: http://rpgd-databset.cs.washington.edu/dataset.html
