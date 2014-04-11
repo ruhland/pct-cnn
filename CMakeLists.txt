@@ -81,20 +81,11 @@ set(PCL_COMPONENTS
     kdtree
     octree
     search
-    sample_consensus
     filters
     features
     io
     geometry
     visualization
-    segmentation
-    surface
-    registration
-    keypoints
-    tracking
-    apps
-    outofcore
-    people
     )
 
 find_package(PCL 1.7 REQUIRED ${PCL_COMPONENTS})
@@ -112,3 +103,4 @@ add_definitions(${PCL_DEFINITIONS})
 add_subdirectory(demos/pcl_visualizer)
 add_subdirectory(demos/icp_registration)
 add_subdirectory(cnn_registration)
+add_subdirectory(demos/pct_cnn_demo)
