@@ -17,4 +17,4 @@ sudo modprobe -r gspca_kinect
 Resources
 ------
 The RGB-D Object Dataset. A collection of various household object models.
-Available for non-commercial reseach/educational use: http://rpgd-databset.cs.washington.edu/dataset.html
+Available for non-commercial reseach/educational use: http://rgbd-dataset.cs.washington.edu/dataset.html
