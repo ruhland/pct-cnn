@@ -11,7 +11,10 @@ Demo::Demo(){
 void Demo::setInputFile(const std::string& name){};
 void Demo::setOutputFile(const std::string& output){};
 void Demo::enableKinect(){};
-void Demo::run(){};
+void Demo::run(){
+
+
+};
 
 int main (int argc, char **argv)
     {
