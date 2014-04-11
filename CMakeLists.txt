@@ -13,6 +13,9 @@ project(PCT-CNN)
 # Options are: None, Debug, Release, RelWithDebInfo and MinSizeRel
 set(CMAKE_BUILD_TYPE Debug)
 
+# Enable C++ 11 support.
+add_definitions(-std=c++11)
+
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 message(STATUS "CMAKE_SYSTEM: ${CMAKE_SYSTEM}")
 message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
@@ -90,10 +93,6 @@ set(PCL_COMPONENTS
     keypoints
     tracking
     apps
-    app_modeler
-    app_cloud_composer
-    app_in_hand_scanner
-    app_point_cloud_editor
     outofcore
     people
     )
@@ -104,10 +103,6 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIR})
 add_definitions(${PCL_DEFINITIONS})
 
-message(STATUS "PCL_VERSION: ${PCL_VERSION}")
-message(STATUS "PCL_COMPONENTS: ${PCL_COMPONENTS}")
-message(STATUS "PCL_DEFINITIONS: ${PCL_DEFINITIONS}")
-
 # ---------------------------------------------------------------------
 # SECTION 4: Subprojects
 #
@@ -115,3 +110,5 @@ message(STATUS "PCL_DEFINITIONS: ${PCL_DEFINITIONS}")
 # ---------------------------------------------------------------------
 
 add_subdirectory(demos/pcl_visualizer)
+add_subdirectory(demos/icp_registration)
+add_subdirectory(cnn_registration)

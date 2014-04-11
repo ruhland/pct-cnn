@@ -1,0 +1,12 @@
+project(cnn_registration)
+
+set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(PROJECT_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
+set(CNN_REGISTRATION_SOURCES "${PROJECT_SOURCE_DIR}/icp_test.cpp")
+
+add_executable(icptest ${CNN_REGISTRATION_SOURCES})
+
+target_link_libraries(icptest ${PCL_LIBRARIES})
