@@ -1,20 +1,30 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <exception>
+#include <pcl/io/pcd_io.h>
 
 #include "Demo.hpp"
 
-Demo::Demo(){
+Demo::Demo(): visualizer(){
    std::cout<<"Demo created";
+   transformer= new PFHTransformStrategy();
 }
 
-void Demo::setInputFile(const std::string& name){};
-void Demo::setOutputFile(const std::string& output){};
-void Demo::enableKinect(){};
+void Demo::setInputFile(const std::string& name){
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
+	pcl::io::loadPCDFile (name, *cloud_in);
+	visualizer.setInputPC(cloud_in);
+	visualizer.setTransformedPC(transformer->transform(cloud_in));
+}
+void Demo::setOutputFile(const std::string& output){}
+void Demo::enableKinect(){}
 void Demo::run(){
+	visualizer.show();
+	while(!visualizer.wasStopped()){
+		visualizer.spinOnce ();
 
-
-};
+	}
+}
 
 int main (int argc, char **argv)
     {
