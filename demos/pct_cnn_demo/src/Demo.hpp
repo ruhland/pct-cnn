@@ -1,8 +1,9 @@
-#ifndef DEMO
-#define DEMO
+#ifndef DEMO_HEADER
+#define DEMO_HEADER
 
 #include <string>
-
+#include "DemoVisualizer.hpp"
+#include "PFHTransformStrategy.hpp"
 class Demo {
 
 public:
@@ -12,7 +13,8 @@ public:
     void setOutputFile(const std::string& output);
     void run();
 private:
-
+	DemoVisualizer	visualizer;
+	TransformStrategy *transformer;
 
 };
 #endif
