@@ -14,7 +14,7 @@ void Demo::setInputFile(const std::string& name){
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::io::loadPCDFile (name, *cloud_in);
 	visualizer.setInputPC(cloud_in);
-	visualizer.setTransformedPC(transformer->transform(cloud_in));
+	visualizer.setTransformedPC(transformer->transform(cloud_in, cloud_in));
 }
 void Demo::setOutputFile(const std::string& output){}
 void Demo::enableKinect(){}
