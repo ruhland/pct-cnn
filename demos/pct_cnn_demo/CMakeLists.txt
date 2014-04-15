@@ -1,10 +1,9 @@
 # ======================================================================
-# PCLVisualizer - Tutorial/Demo found on:
-#  http://pointclouds.org/documentation/tutorials/pcl_visualizer.php
+# Coherent Nearest Neighbour Registration Demo
 # ======================================================================
 
 # This subproject's name. Sets the variable PROJECT_NAME.
-project(icp_registration_demo)
+project(pct_cnn_demo)
 
 # This project's directory structure.
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
