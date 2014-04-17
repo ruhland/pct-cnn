@@ -4,4 +4,9 @@
 **/cmake_install.cmake
 **/CMakeFiles
 **/bin
+
+# Eclipse files
+**/.project
+**/.cproject
+
 faces

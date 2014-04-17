@@ -4,10 +4,13 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/impl/point_types.hpp>
 
+using namespace pcl;
+using namespace std;
+
 class TransformStrategy
 {
 public:
-    virtual pcl::PointCloud<pcl::PointXYZRGB>::Ptr transform(pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, pcl::PointCloud<pcl::PointXYZRGB>::Ptr target) = 0;
+    virtual PointCloud<PointXYZRGB>::Ptr transform(const PointCloud<PointXYZRGB>::Ptr source, const PointCloud<PointXYZRGB>::Ptr target) = 0;
 };
 
 #endif
