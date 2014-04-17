@@ -5,6 +5,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
+#include <pcl/common/transformation_from_correspondences.h>
 #include <pcl/features/feature.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/pfh.h>
@@ -18,12 +19,14 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 
+#include <opencv/cv.h>
+
 #include "PFHTransformStrategy.hpp"
 
 // Downsample a point cloud by using a voxel grid.
 // See http://pointclouds.org/documentation/tutorials/voxel_grid.php
 void filter (PointCloud<PointXYZRGB>::Ptr cloud, 
-        PointCloud<PointXYZRGB>::Ptr cloud_filtered, float leaf_size=0.01f)
+        PointCloud<PointXYZRGB>::Ptr cloud_filtered, float leaf_size=0.1f)
 {
     PointCloud<PointXYZRGB>::Ptr tmp_ptr1(new PointCloud<PointXYZRGB>);
 
@@ -88,13 +91,13 @@ void compute_PFH_features_at_keypoints(PointCloud<PointXYZRGB>::Ptr &points,
     pfh_est.compute(*descriptors);
 }
 
-void find_feature_correspondance(
+void find_feature_correspondence(
         PointCloud<PFHSignature125>::Ptr &source_descriptors,
         PointCloud<PFHSignature125>::Ptr &target_descriptors,
-        vector<int> &correspondance, vector<float> correspondance_scores)
+        vector<int> &correspondence, vector<float> correspondence_scores)
 {
-    correspondance.resize(source_descriptors->size());
-    correspondance_scores.resize(source_descriptors->size());
+    correspondence.resize(source_descriptors->size());
+    correspondence_scores.resize(source_descriptors->size());
 
     pcl::KdTreeFLANN<pcl::PFHSignature125> descriptor_kdtree;
     descriptor_kdtree.setInputCloud(target_descriptors);
@@ -107,8 +110,8 @@ void find_feature_correspondance(
     {
         descriptor_kdtree.nearestKSearch(*source_descriptors, i, k, k_indices,
                 k_squared_distances);
-        correspondance[i] = k_indices[0];
-        correspondance_scores[i] = k_squared_distances[0];
+        correspondence[i] = k_indices[0];
+        correspondence_scores[i] = k_squared_distances[0];
     }
 }
 
@@ -116,9 +119,11 @@ void find_feature_correspondance(
 PFHTransformStrategy::PFHTransformStrategy() : TransformStrategy() {}
 
 PointCloud<PointXYZRGB>::Ptr PFHTransformStrategy::transform(
-        const PointCloud<PointXYZRGB>::Ptr source, 
+        const PointCloud<PointXYZRGB>::Ptr source,
         const PointCloud<PointXYZRGB>::Ptr target)
 {
+    PointCloud<PointXYZRGB>::Ptr transformed(new PointCloud<PointXYZRGB>);
+
     PointCloud<PointXYZRGB>::Ptr source_points(source);
     PointCloud<PointXYZRGB>::Ptr source_filtered(new PointCloud<PointXYZRGB>);
     PointCloud<Normal>::Ptr source_normals(new PointCloud<Normal>);
@@ -148,17 +153,68 @@ PointCloud<PointXYZRGB>::Ptr PFHTransformStrategy::transform(
     compute_PFH_features_at_keypoints(target_filtered, target_normals,
             target_descriptors, target_indices);
 
-    vector<int> correspondances;
-    vector<float> correspondance_scores;
-    find_feature_correspondance(source_descriptors, target_descriptors,
-            correspondances, correspondance_scores);
+    vector<int> correspondences;
+    vector<float> correspondence_scores;
+    find_feature_correspondence(source_descriptors, target_descriptors,
+            correspondences, correspondence_scores);
 
-    std::cout << "First cloud: Found " << source_keypoints->size()
-        << " keypoints out of " << source_filtered->size() << " total points."
-        << std::endl;
-    std::cout << "Second cloud: Found " << target_keypoints->size()
-        << " keypoints out of " << target_filtered->size() << " total points."
-        << std::endl;
+    cout << "First cloud: Found " << source_keypoints->size() << " keypoints "
+        << "out of " << source_filtered->size() << " total points." << endl;
+    cout << "Second cloud: Found " << target_keypoints->size() << " keypoints"
+        << " out of " << target_filtered->size() << " total points." << endl;
 
-    return PointCloud<PointXYZRGB>::Ptr (source_points);
+    // Start with the actual transformation. Yeay :)
+    TransformationFromCorrespondences tfc;
+    tfc.reset();
+
+    vector<int> sorted_scores;
+    cv::sortIdx(correspondence_scores, sorted_scores, 2);
+
+    vector<float> tmp(correspondence_scores);
+    sort(tmp.begin(), tmp.end());
+
+    float median_score = tmp[tmp.size() / 2];
+    vector<int> fidx;
+    vector<int> fidxt;
+
+    Eigen::Vector3f source_position(0, 0, 0);
+    Eigen::Vector3f target_position(0, 0, 0);
+
+    for (size_t i = 0; i < correspondence_scores.size(); i++) {
+        int index = sorted_scores[i];
+        if (median_score >= correspondence_scores[index]) {
+            source_position[0] = source_keypoints->points[index].x;
+            source_position[1] = source_keypoints->points[index].y;
+            source_position[2] = source_keypoints->points[index].z;
+
+            target_position[0] = target_keypoints->points[index].x;
+            target_position[1] = target_keypoints->points[index].y;
+            target_position[2] = target_keypoints->points[index].z;
+
+            if (abs(source_position[1] - target_position[1]) > 0.2) {
+                continue;
+            }
+
+            tfc.add(source_position, target_position,
+                    correspondence_scores[index]);
+            fidx.push_back(source_indices[index]);
+            fidxt.push_back(target_indices[correspondences[index]]);
+        }
+    }
+
+    Eigen::Affine3f tr;
+    tr = tfc.getTransformation();
+
+    cout << "TFC transformation: " << endl;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            cout << tr(i, i) << "\t";
+        }
+        cout << endl;
+    }
+
+    transformPointCloud(*source_filtered, *transformed,
+            tfc.getTransformation());
+
+    return transformed;
 }

@@ -10,6 +10,7 @@ using namespace std;
 class TransformStrategy
 {
 public:
+    virtual ~TransformStrategy() {}
     virtual PointCloud<PointXYZRGB>::Ptr transform(const PointCloud<PointXYZRGB>::Ptr source, const PointCloud<PointXYZRGB>::Ptr target) = 0;
 };
 
