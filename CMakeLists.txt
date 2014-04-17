@@ -95,7 +95,29 @@ link_directories(${PCL_LIBRARY_DIR})
 add_definitions(${PCL_DEFINITIONS})
 
 # ---------------------------------------------------------------------
-# SECTION 4: Subprojects
+# SECTION 4: OpenCV Settings
+#
+# Include and linking flags for OpenCV.
+# ---------------------------------------------------------------------
+
+find_package(OpenCV REQUIRED)
+
+include_directories(${OpenCV_INCLUDE_DIRS})
+link_directories(${OpenCV_LIB_DIR})
+
+# ---------------------------------------------------------------------
+# SECTION 4: OpenCV Settings
+#
+# Include and linking flags for OpenCV.
+# ---------------------------------------------------------------------
+
+find_package(Boost COMPONENTS program_options REQUIRED)
+
+include_directories(${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIR})
+
+# ---------------------------------------------------------------------
+# SECTION 5: Subprojects
 #
 # Add your subproject directories here.
 # ---------------------------------------------------------------------

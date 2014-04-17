@@ -31,4 +31,4 @@ add_executable(${EXECUTABLE_NAME} ${PROJECT_SOURCES})
 
 message(STATUS "Adding executable ${EXECUTABLE_NAME} in ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-target_link_libraries(${EXECUTABLE_NAME} ${PCL_LIBRARIES} boost_program_options)
+target_link_libraries(${EXECUTABLE_NAME} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
