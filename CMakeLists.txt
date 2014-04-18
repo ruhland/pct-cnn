@@ -22,6 +22,7 @@ message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message(STATUS "CMAKE_PROJECT_NAME: ${CMAKE_PROJECT_NAME}")
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "")
 
 # ---------------------------------------------------------------------
 # SECTION 1: CMake General Configuration
@@ -61,6 +62,7 @@ message(STATUS "PROJECT_NAME: ${PROJECT_NAME}")
 message(STATUS "PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_INCLUDE_DIR: ${PROJECT_INCLUDE_DIR}")
 message(STATUS "PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
+message(STATUS "")
 
 # ---------------------------------------------------------------------
 # SECTION 3: PCL Stuff
@@ -102,22 +104,42 @@ add_definitions(${PCL_DEFINITIONS})
 
 find_package(OpenCV REQUIRED)
 
+message(STATUS)
+message(STATUS "OpenCV version: " ${OpenCV_VERSION})
+
+message(STATUS "Found the following OpenCV libraries:")
+foreach(component ${OpenCV_LIB_COMPONENTS})
+    message(STATUS "  " ${component})
+endforeach()
+message(STATUS)
+
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIB_DIR})
 
 # ---------------------------------------------------------------------
-# SECTION 4: OpenCV Settings
+# SECTION 5: Boost Settings
 #
-# Include and linking flags for OpenCV.
+# Include and linking flags for Boost.
 # ---------------------------------------------------------------------
 
-find_package(Boost COMPONENTS program_options REQUIRED)
+# You have to add the required components manually.
+# Some components are already in use by the pcl. Those compents are:
+# --
+#  system filesystem thread date_time iostream mpi serialization
+# --
+set(Boost_COMPONENTS
+    program_options
+    )
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIR})
+find_package(Boost COMPONENTS ${Boost_COMPONENTS} REQUIRED)
+
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIR})
+    link_directories(${Boost_LIBRARY_DIR})
+endif()
 
 # ---------------------------------------------------------------------
-# SECTION 5: Subprojects
+# SECTION 6: Subprojects
 #
 # Add your subproject directories here.
 # ---------------------------------------------------------------------
