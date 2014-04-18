@@ -1,31 +1,61 @@
-#ifndef DemoVisualizer_HEADER
-#define DemoVisualizer_HEADER
+#ifndef DEMOVISUALIZER_HPP
+#define DEMOVISUALIZER_HPP
+
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/impl/point_types.hpp>
+#include <pcl/point_types.h>
 
-class DemoVisualizer  {
-	public:
-	DemoVisualizer();
-		void setInputPC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
-		void setTransformedPC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
-		void show();
-		void close();
-		/*--- wrapped function calls --*/
-		bool wasStopped();
-		void spinOnce();
-	private:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed;
-		pcl::visualization::PCLVisualizer viewer;
+using namespace pcl;
+using namespace std;
 
-		/** /brief Viewport 1 **/
-		int vp1 = 1;
-		int vp2 = 2;
-		int vp3 = 3;
+class DemoVisualizer
+{
+public:
+    DemoVisualizer();
 
-		/** /brief ID for Point Cload */
-		static std::string const pcInput;
-		static std::string const pcTransformed;
-	};
+    vector<int> getViewports();
+
+    template<typename PointT>
+    void setCloud(typename PointCloud<PointT>::Ptr cloud,
+            std::string id, int viewport)
+    {
+        viewer.addPointCloud(cloud, id, viewport);
+    }
+
+    template<typename PointT>
+    void setSourceCloud(typename PointCloud<PointT>::Ptr cloud)
+    {
+        setCloud<PointT>(cloud, source_cloud_id, viewports[0]);
+    }
+
+    template<typename PointT>
+    void setTargetCloud(typename PointCloud<PointT>::Ptr cloud)
+    {
+        setCloud<PointT>(cloud, target_cloud_id, viewports[1]);
+    }
+
+    template<typename PointT>
+    void setTransformedCloud(
+            typename PointCloud<PointT>::Ptr cloud)
+    {
+        setCloud<PointT>(cloud, transformed_cloud_id, viewports[2]);
+    }
+
+    void show();
+    void close();
+
+    /*--- wrapped function calls --*/
+    bool wasStopped();
+    void spinOnce();
+
+private:
+    visualization::PCLVisualizer viewer;
+
+    vector<int> viewports;
+
+    /** /brief ID for Point Cload */
+    static std::string const source_cloud_id;
+    static std::string const target_cloud_id;
+    static std::string const transformed_cloud_id;
+};
 
 #endif
