@@ -5,21 +5,19 @@
 #include <thread>
 #include "Demo.hpp"
 
-Demo::Demo(): visualizer(),kinect(){
+Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXYZRGB>),sourceCloud(new pcl::PointCloud<pcl::PointXYZRGB>){
    std::cout<<"Demo created";
-   transformer= new PFHTransformStrategy();
+   transformer= new PFHTransformStrategy<PointXYZRGB>();
 }
 
 void Demo::setTargetFile(const std::string& name){
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
-	pcl::io::loadPCDFile (name, *cloud_in);
-	visualizer.setTargetPC(cloud_in);
-	//visualizer.setTransformedPC(transformer->transform(cloud_in, cloud_in));
+	pcl::io::loadPCDFile (name, *targetCloud);
+	visualizer.setTargetPC(targetCloud);
 }
 void Demo::setSourceFile(const std::string& output){
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
-	pcl::io::loadPCDFile (output, *cloud_in);
-	visualizer.setSourcePC(cloud_in);
+	pcl::io::loadPCDFile (output, *sourceCloud);
+	DemoVisualizer::scaleToXAxis(sourceCloud,		1.0f);
+	visualizer.setSourcePC(sourceCloud);
 }
 void Demo::enableKinect(){
 	if(!kinect.connect())
@@ -28,13 +26,17 @@ void Demo::enableKinect(){
 void Demo::run(){
 	int lastface=0;
 	visualizer.show();
+	int lastrequestedTransofmation=0;
 	std::thread extractFace(&KinectGrabber::extractFaceLoop,&kinect);
 	while(!visualizer.wasStopped()){
 		visualizer.spinOnce ();
 		if(kinect.isConnected() && lastface!=kinect.getFraceNr()){
 			lastface=kinect.getFraceNr();
-			visualizer.setSourcePC(kinect.getLatestFace());
+			sourceCloud=kinect.getLatestFace();
+			visualizer.setSourcePC(sourceCloud);
 		}
+		if(lastrequestedTransofmation< visualizer.getRequestedTransformations())
+			visualizer.setTransformedPC(transformer->transform(sourceCloud,targetCloud));
 	}
 }
 

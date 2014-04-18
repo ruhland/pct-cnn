@@ -19,18 +19,22 @@ class DemoVisualizer  {
 		static void moveToCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
 		void rotateZAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 				float degrees) ;
+		inline int getRequestedTransformations(){return requestedTransformations;}
 	private:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source;
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target;
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed;
 		pcl::visualization::PCLVisualizer viewer;
-
+		void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event);
 		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 
 		/** /brief Viewport 1 **/
 		int vp1 = 1;
 		int vp2 = 2;
 		int vp3 = 3;
+		bool sourceLocked = false;
+
+		int requestedTransformations=0;
 
 		/** /brief ID for Point Cload */
 		static std::string const pcTarget;

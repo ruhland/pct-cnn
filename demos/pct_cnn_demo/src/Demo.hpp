@@ -16,8 +16,10 @@ public:
     void run();
 private:
 	DemoVisualizer	visualizer;
-	TransformStrategy *transformer;
+	TransformStrategy<PointXYZRGB> *transformer;
 	KinectGrabber kinect;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr sourceCloud;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr targetCloud;
 
 };
 #endif

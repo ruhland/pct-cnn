@@ -4,14 +4,11 @@
 #include <pcl/visualization/common/common.h>
 #include <pcl/common/impl/common.hpp>
 
-bool next_iteration = false;
-bool locked = false;
-void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event,
-		void* nothing) {
+void DemoVisualizer::keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event) {
 	if (event.getKeySym() == "space" && event.keyDown())
-		next_iteration = true;
+		requestedTransformations++;
 	if (event.getKeyCode() == 'l')
-		locked = true;
+		sourceLocked = true;
 }
 
 std::string const DemoVisualizer::pcSource = "SourcePointCloud";
@@ -24,10 +21,15 @@ DemoVisualizer::DemoVisualizer() :
 	viewer.createViewPort(0.0, 0.0, 0.33, 1.0, vp1);
 	viewer.createViewPort(0.33, 0.0, 0.66, 1.0, vp2);
 	viewer.createViewPort(0.66, 0.0, 1.0, 1.0, vp3);
-	viewer.registerKeyboardCallback(&keyboardEventOccurred, (void*) NULL);
+
+	boost::function<
+				void(const pcl::visualization::KeyboardEvent& event)> i = boost::bind(
+				&DemoVisualizer::keyboardEventOccurred, this, _1);
+
+	viewer.registerKeyboardCallback(i);
 }
 void DemoVisualizer::setSourcePC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
-	if (locked) {
+	if (sourceLocked) {
 		std::cout << "Viewer Source locked" << std::endl;
 		return;
 	}
@@ -120,28 +122,6 @@ bool DemoVisualizer::wasStopped() {
 }
 
 void DemoVisualizer::spinOnce() {
-	if (next_iteration) {
-		//icp.setMaxCorrespondenceDistance(500000000000);
-		// Set the transformation epsilon (criterion 2)
-		//icp.setTransformationEpsilon(1e-9);
-		// Set the euclidean distance difference epsilon (criterion 3)
-		//icp.setEuclideanFitnessEpsilon(10000000000000);
-		icp.setMaximumIterations(1000);
-		icp.setInputSource(cloud_source);
-		icp.setInputTarget(cloud_target);
-		icp.align(*cloud_transformed);
-		std::cout << icp.getFinalTransformation() << std::endl;
-		setTransformedPC(cloud_transformed);
-		cloud_source = cloud_transformed;
-		std::cout << "ICP!" << std::endl;
-		next_iteration = false;
-		pcl::PointXYZRGB min;
-		pcl::PointXYZRGB max;
-		pcl::getMinMax3D<pcl::PointXYZRGB>(*cloud_source, min, max);
-		std::cout << " source min " << min << " max " << max << std::endl;
-		pcl::getMinMax3D<pcl::PointXYZRGB>(*cloud_target, min, max);
-		std::cout << " target min " << min << " max " << max << std::endl;
-	}
 	viewer.spinOnce(1, true);
 }
 

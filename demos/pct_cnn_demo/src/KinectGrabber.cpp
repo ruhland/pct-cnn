@@ -7,6 +7,7 @@
 #include <pcl/io/openni_camera/openni_depth_image.h>
 #include <pcl/io/openni_camera/openni_image_rgb24.h>
 #include <pcl/filters/radius_outlier_removal.h>
+#include <thread>
 
 namespace pcl {
 typedef union {
@@ -87,7 +88,8 @@ void KinectGrabber::extractFace() {
 	clock_t begin_time = clock();
 	std::unique_lock<std::mutex> lock(latestFaceMutex);
 	if (frameNr == latestFrameNr) {
-		std::cout << "No new data" << std::endl;
+		//std::cout << "No new data" << std::endl;
+		 std::this_thread::yield();
 		return;
 	}
 
