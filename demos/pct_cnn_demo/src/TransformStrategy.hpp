@@ -16,7 +16,7 @@ public:
     virtual typename PointCloud<PointT>::Ptr transform(
             const typename PointCloud<PointT>::Ptr source,
             const typename PointCloud<PointT>::Ptr target) = 0;
-    virtual void loadDefaultSettings() = 0;
+    virtual void loadDefaultPresets() = 0;
 };
 
 #endif

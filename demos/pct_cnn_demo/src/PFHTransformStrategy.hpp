@@ -30,10 +30,7 @@ template<typename PointT>
 class PFHTransformStrategy : public TransformStrategy<PointT>
 {
 public:
-    PFHTransformStrategy()
-    {
-        cout << "Point Feature Histogram" << endl;
-    };
+    PFHTransformStrategy() {};
 
     typename PointCloud<PointT>::Ptr transform(
             const typename PointCloud<PointT>::Ptr source,
@@ -42,33 +39,55 @@ public:
         source_cloud = *source;
         target_cloud = *target;
 
-        cout << "source = " << source << ", &source_cloud = " << &source_cloud << endl;
+        cout << "[PFHTransformStrategy::transform] Setting source cloud: "
+            << source->size() << " points" << endl;
+        cout << "[PFHTransformStrategy::transform] Setting target cloud: "
+            << target->size() << " points" << endl;
 
         typename PointCloud<PointT>::Ptr transformed(new PointCloud<PointT>);
 
         typename PointCloud<PointXYZRGB>::Ptr source_points(source);
-        typename PointCloud<PointXYZRGB>::Ptr source_filtered(new PointCloud<PointT>);
+        typename PointCloud<PointXYZRGB>::Ptr source_filtered(
+                new PointCloud<PointT>);
         PointCloud<Normal>::Ptr source_normals(new PointCloud<Normal>);
-        PointCloud<PointWithScale>::Ptr source_keypoints(new PointCloud<PointWithScale>);
-        PointCloud<PFHSignature125>::Ptr source_descriptors(new PointCloud<PFHSignature125>);
+        PointCloud<PointWithScale>::Ptr source_keypoints(
+                new PointCloud<PointWithScale>);
+        PointCloud<PFHSignature125>::Ptr source_descriptors(
+                new PointCloud<PFHSignature125>);
 
         typename PointCloud<PointT>::Ptr target_points(target);
-        typename PointCloud<PointT>::Ptr target_filtered(new PointCloud<PointT>);
-        PointCloud<Normal>::Ptr target_normals(new PointCloud<Normal>);
-        PointCloud<PointWithScale>::Ptr target_keypoints(new PointCloud<PointWithScale>);
-        PointCloud<PFHSignature125>::Ptr target_descriptors(new PointCloud<PFHSignature125>);
+        typename PointCloud<PointT>::Ptr target_filtered(
+                new PointCloud<PointT>);
+        PointCloud<Normal>::Ptr target_normals(
+                new PointCloud<Normal>);
+        PointCloud<PointWithScale>::Ptr target_keypoints(
+                new PointCloud<PointWithScale>);
+        PointCloud<PFHSignature125>::Ptr target_descriptors(
+                new PointCloud<PFHSignature125>);
 
-        filter(source_points, source_filtered);
-        filter(target_points, target_filtered);
+        cout << "[PFHTransformStrategy::transform] Downsampling source and "
+            << "target clouds..." << endl;
+
+        filter(source_points, source_filtered, 1000.0f);
+        filter(target_points, target_filtered, 1000.0f);
+
+        cout << "[PFHTransformStrategy::transform] Creating normals for "
+            << "source and target cloud..." << endl;
 
         create_normals<Normal>(source_filtered, source_normals);
         create_normals<Normal>(target_filtered, target_normals);
+
+        cout << "[PFHTransformStrategy::transform] Finding keypoints in "
+            << "source and target cloud..." << endl;
 
         detect_keypoints(source_filtered, source_keypoints);
         detect_keypoints(target_filtered, target_keypoints);
 
         vector<int> source_indices(source_keypoints->points.size());
         vector<int> target_indices(target_keypoints->points.size());
+
+        cout << "[PFHTransformStrategy::transform] Computing PFH features "
+            << "for source and target cloud..." << endl;
 
         compute_PFH_features_at_keypoints(source_filtered, source_normals,
                 source_descriptors, target_indices);
@@ -77,6 +96,7 @@ public:
 
         vector<int> correspondences;
         vector<float> correspondence_scores;
+
         find_feature_correspondence(source_descriptors, target_descriptors,
                 correspondences, correspondence_scores);
 
@@ -141,10 +161,9 @@ public:
         return transformed;
     };
 
-    void loadDefaultSettings()
+    void loadDefaultPresets()
     {
-        cout << "Loading default settings for the Point Feature Historgram"
-            << " Transformation:" << endl;
+        cout << "[PFH Transformation] loading default presets..." << endl;
     };
 
 private:
@@ -156,29 +175,83 @@ private:
     // See http://pointclouds.org/documentation/tutorials/voxel_grid.php
     void filter (typename PointCloud<PointT>::Ptr cloud,
             typename PointCloud<PointT>::Ptr cloud_filtered,
-            float leaf_size=0.1f)
+            float leaf_size=0.01f)
     {
+        cout << "[PFHTransformationStrategy::filter] Input cloud:"
+            << endl << "    " << cloud->points.size() << " points" << endl;
+
         typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
 
         VoxelGrid<PointT> vox_grid;
         vox_grid.setInputCloud(cloud);
         vox_grid.setSaveLeafLayout(true);
         vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
-        vox_grid.filter(*tmp_ptr1);
+
+        cout << "[PFHTransformationStrategy::filter] Creating a voxel grid:"
+            << endl << "    leaf size: [" << leaf_size << ", "
+            << leaf_size << ", " << leaf_size << "]" << endl;
+
+        // Skip the rest...
+        // vox_grid.filter(*tmp_ptr1);
+        vox_grid.filter(*cloud_filtered);
+
+        cout << "[PFHTransformationStrategy::filter] Result of voxel grid"
+            << " filtering:" << endl << "    " << cloud_filtered->points.size()
+            << " points remaining" << endl;
+
+        return;
 
         typename PointCloud<PointT>::Ptr tmp_ptr2(new PointCloud<PointT>);
+
+        float pass1_limit_min = 0.0;
+        float pass1_limit_max = 3.0;
 
         PassThrough<PointT> pass1;
         pass1.setInputCloud(tmp_ptr1);
         pass1.setFilterFieldName("z");
-        pass1.setFilterLimits(0.0, 3.0);
+        pass1.setFilterLimits(pass1_limit_min, pass1_limit_max);
+
+        cout << "[PFH Transformation : Downsampling] starting first filter"
+            << " pass through:" << endl;
+        cout << "  filter field name: " << pass1.getFilterFieldName() << endl;
+        cout << "  filter limits: min = " << pass1_limit_min << ", max = "
+            << pass1_limit_max << endl;
+
+        float avg;
+        for (PointT point : *tmp_ptr1) {
+            avg += point.z;
+        }
+
+        cout << "  average field value: " << avg / tmp_ptr1->size() << endl;
+
         pass1.filter(*tmp_ptr2);
+
+        cout << "[PFH Transformation : Downsampling] result of first pass:"
+            << endl << "  " << tmp_ptr2->points.size() << " points remaining."
+            << endl;
+
+        float pass2_limit_min = -2.0;
+        float pass2_limit_max = 1.0;
 
         PassThrough<PointT> pass2;
         pass2.setInputCloud(tmp_ptr2);
         pass2.setFilterFieldName("x");
-        pass2.setFilterLimits(-2.0, 1.0);
+        pass2.setFilterLimits(pass2_limit_min, pass2_limit_max);
+
+        cout << "[PFH Transformation : Downsampling] starting second filter"
+            << " pass through:" << endl;
+        cout << "  filter field name: " << pass2.getFilterFieldName() << endl;
+        cout << "  filter limits: min = " << pass2_limit_min << ", max = "
+            << pass2_limit_max << endl;
+
         pass2.filter(*cloud_filtered);
+
+        cout << "[PFH Transformation : Downsampling] result of second pass:"
+            << endl << "  " << cloud_filtered->points.size()
+            << " points remaining" << endl;
+        cout << "[PFH Transformation : Downsampling] size of output cloud:"
+            << endl << "  " << cloud_filtered->points.size() << " points"
+            << endl << endl;
     };
 
     // Create/Estimate the surface normals.
@@ -189,6 +262,9 @@ private:
             float normal_radius=0.03)
     {
         NormalEstimation<PointT, NormalT> nest;
+
+        cout << "[PFHTransformationStrategy::create_normals] Input cloud "
+            << cloud->points.size() << " points" << endl;
 
         nest.setInputCloud(cloud);
         nest.setSearchMethod (typename search::KdTree<PointT>::Ptr
@@ -225,6 +301,12 @@ private:
         pfh_est.setRadiusSearch(feature_radius);
         pfh_est.setInputCloud(points);
         pfh_est.setInputNormals(normals);
+
+        cout << "[PFH Transformation : PFH Estimation]" << endl;
+        cout << "  setting input cloud: " << points->size() << " points"
+            << endl;
+        cout << "  setting input normals: " << normals->size() << " normals"
+            << endl;
 
         pfh_est.compute(*descriptors);
     };
