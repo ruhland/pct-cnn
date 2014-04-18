@@ -2,27 +2,39 @@
 #include <iostream>
 #include <exception>
 #include <pcl/io/pcd_io.h>
-
+#include <thread>
 #include "Demo.hpp"
 
-Demo::Demo(): visualizer(){
+Demo::Demo(): visualizer(),kinect(){
    std::cout<<"Demo created";
    transformer= new PFHTransformStrategy();
 }
 
-void Demo::setInputFile(const std::string& name){
+void Demo::setTargetFile(const std::string& name){
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::io::loadPCDFile (name, *cloud_in);
-	visualizer.setInputPC(cloud_in);
-	visualizer.setTransformedPC(transformer->transform(cloud_in, cloud_in));
+	visualizer.setTargetPC(cloud_in);
+	//visualizer.setTransformedPC(transformer->transform(cloud_in, cloud_in));
 }
-void Demo::setOutputFile(const std::string& output){}
-void Demo::enableKinect(){}
+void Demo::setSourceFile(const std::string& output){
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in 	(new pcl::PointCloud<pcl::PointXYZRGB>);
+	pcl::io::loadPCDFile (output, *cloud_in);
+	visualizer.setSourcePC(cloud_in);
+}
+void Demo::enableKinect(){
+	if(!kinect.connect())
+		std::cout<<"Not possible to connect to Kinect";
+}
 void Demo::run(){
+	int lastface=0;
 	visualizer.show();
+	std::thread extractFace(&KinectGrabber::extractFaceLoop,&kinect);
 	while(!visualizer.wasStopped()){
 		visualizer.spinOnce ();
-
+		if(kinect.isConnected() && lastface!=kinect.getFraceNr()){
+			lastface=kinect.getFraceNr();
+			visualizer.setSourcePC(kinect.getLatestFace());
+		}
 	}
 }
 
@@ -33,9 +45,9 @@ int main (int argc, char **argv)
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("i",boost::program_options::value<std::string>()->required(),"input file (required)")
-        ("o",boost::program_options::value<std::string>(),"output file")
-        ("k","enable Kinect")
+        ("t",boost::program_options::value<std::string>()->required(),"target file (required)")
+        ("s",boost::program_options::value<std::string>(),"source file")
+        ("k","enable Kinect instead of source file")
     ;
 
     boost::program_options::variables_map vm;
@@ -51,9 +63,9 @@ int main (int argc, char **argv)
     Demo demo;
     if(vm.count("k"))
         demo.enableKinect();
-    demo.setInputFile(vm["i"].as<std::string>());
-    if(vm.count("o"))
-        demo.setOutputFile(vm["o"].as<std::string>());
+    demo.setTargetFile(vm["t"].as<std::string>());
+    if(vm.count("s"))
+        demo.setSourceFile(vm["s"].as<std::string>());
     demo.run();
     }
     /*catch(boost::program_options::error& e){

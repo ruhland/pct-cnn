@@ -4,17 +4,20 @@
 #include <string>
 #include "DemoVisualizer.hpp"
 #include "PFHTransformStrategy.hpp"
+#include "KinectGrabber.hpp"
+
 class Demo {
 
 public:
     Demo();
     void enableKinect();
-    void setInputFile(const std::string& name);
-    void setOutputFile(const std::string& output);
+    void setTargetFile(const std::string& name);
+    void setSourceFile(const std::string& output);
     void run();
 private:
 	DemoVisualizer	visualizer;
 	TransformStrategy *transformer;
+	KinectGrabber kinect;
 
 };
 #endif
