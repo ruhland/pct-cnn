@@ -68,9 +68,10 @@ public:
         cout << "[PFHTransformStrategy::transform] Downsampling source and "
             << "target clouds..." << endl;
 
-        filter(source_points, source_filtered, 1000.0f);
-        filter(target_points, target_filtered, 1000.0f);
-
+        //filter(source_points, source_filtered, 0.01f);
+        //filter(target_points, target_filtered, 0.01f);
+        source_filtered=source_points;
+        target_filtered=target_points;
         cout << "[PFHTransformStrategy::transform] Creating normals for "
             << "source and target cloud..." << endl;
 
@@ -83,15 +84,19 @@ public:
         detect_keypoints(source_filtered, source_keypoints);
         detect_keypoints(target_filtered, target_keypoints);
 
+        for(PointWithScale p: source_keypoints->points){
+        	cout<<"keypoint "<<p;
+        }
+
         vector<int> source_indices(source_keypoints->points.size());
         vector<int> target_indices(target_keypoints->points.size());
 
         cout << "[PFHTransformStrategy::transform] Computing PFH features "
             << "for source and target cloud..." << endl;
 
-        compute_PFH_features_at_keypoints(source_filtered, source_normals,
+        compute_PFH_features_at_keypoints(source_filtered, source_normals,source_keypoints,
                 source_descriptors, target_indices);
-        compute_PFH_features_at_keypoints(target_filtered, target_normals,
+        compute_PFH_features_at_keypoints(target_filtered, target_normals,target_keypoints,
                 target_descriptors, target_indices);
 
         vector<int> correspondences;
@@ -99,6 +104,9 @@ public:
 
         find_feature_correspondence(source_descriptors, target_descriptors,
                 correspondences, correspondence_scores);
+
+        cout << "correspondences: " << correspondences.size() << endl;
+        cout << "c. scores: " << correspondence_scores.size() << endl;
 
         cout << "First cloud: Found " << source_keypoints->size() << " keypoints "
             << "out of " << source_filtered->size() << " total points." << endl;
@@ -110,7 +118,7 @@ public:
         tfc.reset();
 
         vector<int> sorted_scores;
-        cv::sortIdx(correspondence_scores, sorted_scores, 2);
+        cv::sortIdx(correspondence_scores, sorted_scores, CV_SORT_EVERY_ROW);
 
         vector<float> tmp(correspondence_scores);
         sort(tmp.begin(), tmp.end());
@@ -121,7 +129,6 @@ public:
 
         Eigen::Vector3f source_position(0, 0, 0);
         Eigen::Vector3f target_position(0, 0, 0);
-
         for (size_t i = 0; i < correspondence_scores.size(); i++) {
             int index = sorted_scores[i];
             if (median_score >= correspondence_scores[index]) {
@@ -136,28 +143,29 @@ public:
                 if (abs(source_position[1] - target_position[1]) > 0.2) {
                     continue;
                 }
-
+               // cout<< "abs position difference:"<<abs(source_position[1] - target_position[1])<<"C-Score"<<correspondence_scores[index]<<endl;
+               // cout<<" Source Position " <<source_position<<endl;
+               // cout<<" target position "<<target_position<<endl;
                 tfc.add(source_position, target_position,
                         correspondence_scores[index]);
                 fidx.push_back(source_indices[index]);
                 fidxt.push_back(target_indices[correspondences[index]]);
             }
         }
-
+        cout << "TFC samples: "<<tfc.getNoOfSamples()<<" AccumulatedWeight "<<tfc.getAccumulatedWeight()<<endl;
         Eigen::Affine3f tr;
         tr = tfc.getTransformation();
-
         cout << "TFC transformation: " << endl;
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                cout << tr(i, i) << "\t";
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                cout << tr.rotation()(i, i) << "\t";
             }
             cout << endl;
         }
 
         transformPointCloud(*source_filtered, *transformed,
                 tfc.getTransformation());
-
+        cout << "transformation finished";
         return transformed;
     };
 
@@ -276,7 +284,7 @@ private:
     void detect_keypoints (typename PointCloud<PointT>::Ptr cloud,
             PointCloud<PointWithScale>::Ptr keypoints, float min_scale=0.01,
             int nr_octaves=3, int nr_octaves_per_scale=3,
-            float min_contrast=10.0)
+            float min_contrast=5.0)
     {
         SIFTKeypoint<PointT, PointWithScale> sift_detect;
 
@@ -290,6 +298,7 @@ private:
 
     void compute_PFH_features_at_keypoints(PointCloud<PointXYZRGB>::Ptr &points,
             PointCloud<Normal>::Ptr &normals,
+            pcl::PointCloud<pcl::PointWithScale>::Ptr &keypoints,
             PointCloud<PFHSignature125>::Ptr &descriptors,
             vector<int> &indices,
             float feature_radius=0.08)
@@ -299,7 +308,13 @@ private:
         pfh_est.setSearchMethod(search::KdTree<PointXYZRGB>::Ptr(
                     new search::KdTree<PointXYZRGB>));
         pfh_est.setRadiusSearch(feature_radius);
-        pfh_est.setInputCloud(points);
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr keypoints_xyzrgb (new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::copyPointCloud (*keypoints, *keypoints_xyzrgb);
+
+        pfh_est.setSearchSurface (points);
+
+        pfh_est.setInputCloud(keypoints_xyzrgb);
         pfh_est.setInputNormals(normals);
 
         cout << "[PFH Transformation : PFH Estimation]" << endl;
@@ -308,13 +323,22 @@ private:
         cout << "  setting input normals: " << normals->size() << " normals"
             << endl;
 
+        for (int i = 0; i < normals->points.size(); i++)
+        {
+          if (!pcl::isFinite<pcl::Normal>(normals->points[i]))
+          {
+            cerr<<"normal "<< i<<" is not finite\n";
+           // normals->points[i]=new pcl::Normal();
+          }
+        }
+
         pfh_est.compute(*descriptors);
     };
 
     void find_feature_correspondence(
             PointCloud<PFHSignature125>::Ptr &source_descriptors,
             PointCloud<PFHSignature125>::Ptr &target_descriptors,
-            vector<int> &correspondence, vector<float> correspondence_scores)
+            vector<int> &correspondence, vector<float> &correspondence_scores)
     {
         correspondence.resize(source_descriptors->size());
         correspondence_scores.resize(source_descriptors->size());
@@ -332,6 +356,9 @@ private:
                     k_indices, k_squared_distances);
             correspondence[i] = k_indices[0];
             correspondence_scores[i] = k_squared_distances[0];
+
+            cout << "step " << i << ": correspondence=" << correspondence[i] << endl;
+            cout << "   correspondence_score=" << correspondence_scores[i] << endl;
         }
     };
 };

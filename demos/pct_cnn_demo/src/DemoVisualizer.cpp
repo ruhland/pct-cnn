@@ -35,8 +35,8 @@ void DemoVisualizer::setSourcePC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
 	}
 
 	cloud_source = arg;
-	rotateZAxis(cloud_source,180);
-	moveToCenter(cloud_source);
+	//rotateZAxis(cloud_source,180);
+	//moveToCenter(cloud_source);
 	//scaleToXAxis(cloud_source, 2.0f);
 	//moveToCenter(cloud_source);
 	viewer.removePointCloud(pcSource);
@@ -91,8 +91,8 @@ void DemoVisualizer::moveToCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc) {
 
 void DemoVisualizer::setTargetPC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
 	cloud_target = arg;
-	moveToCenter(cloud_target);
-	scaleToXAxis(cloud_target, 1.0f);
+	//moveToCenter(cloud_target);
+	//scaleToXAxis(cloud_target, 1.0f);
 	viewer.removePointCloud(pcTarget);
 	viewer.addPointCloud(cloud_target, pcTarget, vp2);
 }
@@ -101,14 +101,18 @@ void DemoVisualizer::setTransformedPC(
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
 	viewer.removePointCloud(pcTransformed);
 	viewer.addPointCloud(arg, pcTransformed, vp3);
+	viewer.setPointCloudRenderingProperties(
+				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTransformed);
 }
 
 void DemoVisualizer::show() {
 	//viewer.initCameraParameters();
 	viewer.setPointCloudRenderingProperties(
-			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, pcTarget);
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTarget);
 	viewer.setPointCloudRenderingProperties(
 				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
+	viewer.setPointCloudRenderingProperties(
+				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTransformed);
 	viewer.setCameraPosition(0, 0, 9, 0, 1, 0, 0);
 	viewer.setCameraClipDistances(0.01f, 1.0e10);
 	viewer.setSize(1280, 1024); // Visualiser window size

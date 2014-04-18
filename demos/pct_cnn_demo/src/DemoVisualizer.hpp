@@ -17,7 +17,7 @@ class DemoVisualizer  {
 		void spinOnce();
 		static void scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr,float max);
 		static void moveToCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
-		void rotateZAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
+		static void rotateZAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 				float degrees) ;
 		inline int getRequestedTransformations(){return requestedTransformations;}
 	private:

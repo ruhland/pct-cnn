@@ -12,10 +12,13 @@ Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXY
 
 void Demo::setTargetFile(const std::string& name){
 	pcl::io::loadPCDFile (name, *targetCloud);
+	DemoVisualizer::moveToCenter(targetCloud);
+	DemoVisualizer::scaleToXAxis(targetCloud,		1.0f);
 	visualizer.setTargetPC(targetCloud);
 }
 void Demo::setSourceFile(const std::string& output){
 	pcl::io::loadPCDFile (output, *sourceCloud);
+	DemoVisualizer::moveToCenter(sourceCloud);
 	DemoVisualizer::scaleToXAxis(sourceCloud,		1.0f);
 	visualizer.setSourcePC(sourceCloud);
 }
@@ -35,8 +38,10 @@ void Demo::run(){
 			sourceCloud=kinect.getLatestFace();
 			visualizer.setSourcePC(sourceCloud);
 		}
-		if(lastrequestedTransofmation< visualizer.getRequestedTransformations())
+		if(lastrequestedTransofmation< visualizer.getRequestedTransformations()){
+			lastrequestedTransofmation=visualizer.getRequestedTransformations();
 			visualizer.setTransformedPC(transformer->transform(sourceCloud,targetCloud));
+		}
 	}
 }
 
