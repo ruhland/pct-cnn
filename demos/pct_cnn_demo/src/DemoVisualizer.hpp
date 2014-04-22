@@ -28,13 +28,15 @@ class DemoVisualizer  {
 		void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event);
 		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 
-		/** /brief Viewport 1 **/
-		int vp1 = 1;
-		int vp2 = 2;
-		int vp3 = 3;
-		bool sourceLocked = false;
+		/** /brief Viewport 1
+		 *  /TODO: use vector of viewports! cf. in StandardViewer.h: vh::createViewports(), etc.
+		 **/ 
+		int vp1;
+		int vp2;
+		int vp3;
+		bool sourceLocked;
 
-		int requestedTransformations=0;
+		int requestedTransformations;
 
 		/** /brief ID for Point Cload */
 		static std::string const pcTarget;

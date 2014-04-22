@@ -1,3 +1,8 @@
+// disable warnings for deprecated code from pcl headers
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 /** Somehow when compiling with std=c++11 linux is not defined **/
 #ifdef __linux
 #define linux 1
@@ -54,11 +59,11 @@ public:
 private:
 	void grabberCallback(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr & cloud);
 	void grabberCallbackImage(const boost::shared_ptr<openni_wrapper::Image>&,const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant);
-	int faceNr=0;
-	int latestFrameNr=0;
-	int frameNr=0;
+	int faceNr;
+	int latestFrameNr;
+	int frameNr;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr latestFace;
-	pcl::Grabber* openniGrabber=0;
+	pcl::Grabber* openniGrabber;
 	std::mutex latestFaceMutex;
 	boost::shared_ptr<openni_wrapper::Image> lastImage;
 	boost::shared_ptr<openni_wrapper::DepthImage> lastDepthImage;

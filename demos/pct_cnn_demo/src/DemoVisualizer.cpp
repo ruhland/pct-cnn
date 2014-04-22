@@ -1,3 +1,8 @@
+// disable warnings for deprecated code from pcl headers (fopen, etc.)
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "DemoVisualizer.hpp"
 #include <iostream>
 #include <vector>
@@ -16,6 +21,7 @@ std::string const DemoVisualizer::pcTarget = "TargetPointCloud";
 std::string const DemoVisualizer::pcTransformed = "TransformedPointCloud";
 
 DemoVisualizer::DemoVisualizer() :
+		vp1(1), vp2(2), vp3(3), sourceLocked(false), requestedTransformations(0),
 		viewer("ICP demo"), cloud_transformed(
 				new pcl::PointCloud<pcl::PointXYZRGB>), icp() {
 	viewer.createViewPort(0.0, 0.0, 0.33, 1.0, vp1);
@@ -53,7 +59,7 @@ void DemoVisualizer::scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 	pcl::PointXYZRGB max;
 	pcl::getMinMax3D<pcl::PointXYZRGB>(*pc, min, max);
 	std::cout << " scaleToXAxis before " << min << " max " << max << std::endl;
-	double scale = maxScale / (max.x-min.x);
+	float scale = maxScale / (max.x-min.x);
 	transformation_matrix(0, 0) = scale;
 	transformation_matrix(1, 1) = scale;
 	transformation_matrix(2, 2) = scale;
@@ -67,7 +73,7 @@ void DemoVisualizer::rotateZAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 	Eigen::Matrix4f transformation_matrix = Eigen::Matrix4f::Identity();
 
 // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-	float theta = degrees * M_PI / 180; // The angle of rotation in radians
+	float theta = degrees * static_cast<float>(M_PI) / 180.0f; // The angle of rotation in radians
 	transformation_matrix(0, 0) = cos(theta);
 	transformation_matrix(0, 1) = -sin(theta);
 	transformation_matrix(1, 0) = sin(theta);

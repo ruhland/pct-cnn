@@ -23,6 +23,7 @@ typedef union {
 }
 
 KinectGrabber::KinectGrabber() :
+		faceNr(0), latestFrameNr(0), frameNr(0), openniGrabber(nullptr),
 		latestFace(new pcl::PointCloud<pcl::PointXYZRGB>), faceCloudId(
 				"ExportKinect"), lastImage(), lastDepthImage(), facedetector(
 				"/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml") {

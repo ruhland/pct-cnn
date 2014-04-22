@@ -1,9 +1,24 @@
+// disable warnings for deprecated code from pcl headers (fopen, etc.)
+#ifdef _MSC_VER
+	#ifndef _CRT_SECURE_NO_WARNINGS
+	#define _CRT_SECURE_NO_WARNINGS
+	#endif
+// also disable specific warnings from MSVC Compiler on Windows
+#pragma warning(disable: 4514 4711 4996)
+#pragma warning(push, 1)
+#endif
+
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <exception>
 #include <pcl/io/pcd_io.h>
 #include <thread>
 #include "Demo.hpp"
+
+// re-enable warnings for Windows
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXYZRGB>),sourceCloud(new pcl::PointCloud<pcl::PointXYZRGB>){
    std::cout<<"Demo created";
