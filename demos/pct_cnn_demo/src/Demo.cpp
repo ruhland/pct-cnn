@@ -14,7 +14,7 @@
 #include <pcl/io/pcd_io.h>
 #include <thread>
 #include "Demo.hpp"
-
+#include "CNNTransformStrategy.hpp"
 // re-enable warnings for Windows
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -22,7 +22,8 @@
 
 Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXYZRGB>),sourceCloud(new pcl::PointCloud<pcl::PointXYZRGB>){
    std::cout<<"Demo created";
-   transformer= new PFHTransformStrategy<PointXYZRGB>();
+  // transformer= new PFHTransformStrategy<PointXYZRGB>();
+   transformer= new CNNTransformStrategy<PointXYZRGB>();
 }
 
 void Demo::setTargetFile(const std::string& name){
