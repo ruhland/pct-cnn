@@ -18,7 +18,6 @@ public:
     virtual typename PointCloud<PointT>::Ptr transform(
             const typename PointCloud<PointT>::Ptr source,
             const typename PointCloud<PointT>::Ptr target,boost::shared_ptr<Configuration> configuration) = 0;
-    virtual void loadDefaultPresets() = 0;
 };
 
 #endif
