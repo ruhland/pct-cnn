@@ -34,7 +34,6 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
   // Downsample a point cloud by using a voxel grid.
   // See http://pointclouds.org/documentation/tutorials/voxel_grid.php
   private:
-    static const int NEARESTNEIGHBORSTOSEARCH = 5;
 
     class PointWithScore
     {
@@ -142,9 +141,9 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
     /**
      * Find the the k nearest neighbors in the target cloud for every 
      * feature point in the source cloud.
-     * The k neigherst neighbors for a point with index i are stored 
+     * The k nearest neighbors for a point with index i are stored
      * in coherent_neighbors[i] with their score. The score/rank of every
-     * neighbor is determined by the squared distnace to the corresponding
+     * neighbor is determined by the squared distance to the corresponding
      * query point.
      */
     template<typename FeatureT>
@@ -183,11 +182,11 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
     void
     findPerfectCoherentNeighbours(PointCloud<PointXYZRGB>::Ptr source_features,
                                   PointCloud<PointXYZRGB>::Ptr target_features,
-                                  vector<vector<PointWithScore>> &coherent_neighbours)
+                                  vector<vector<PointWithScore>> &coherent_neighbours,int k=5)
     {
       coherent_neighbours.resize(source_features->size());
       for (size_t i = 0; i < source_features->size(); i++) {
-        for (int y = 0; y < NEARESTNEIGHBORSTOSEARCH; y++) {
+        for (int y = 0; y < k; y++) {
           PointWithScore a(i, 0);
           coherent_neighbours[i].push_back(a);
         }
@@ -220,7 +219,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
     void refineScores(
         vector<vector<PointWithScore>> &coherentNeighboursSource,
-        vector<vector<PointWithScore>> &coherentNeighboursTarget)
+        vector<vector<PointWithScore>> &coherentNeighboursTarget,int k)
     {
       for (int i = 0; i < coherentNeighboursSource.size(); i++) {
         std::sort(coherentNeighboursSource[i].begin(), coherentNeighboursSource[i].end());
@@ -234,7 +233,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
             //std::cout<<t<<", ";
             if (coherentNeighboursTarget[targetIndex][t].index == i) {
               std::cout<<" Found corresponding forward backward search points source: "<<i<<" target:"<<targetIndex <<" Score before:"<<coherentNeighboursSource[i][s].score;
-              coherentNeighboursSource[i][s].score+=coherentNeighboursTarget[targetIndex][t].score+(NEARESTNEIGHBORSTOSEARCH+NEARESTNEIGHBORSTOSEARCH-s-t);
+              coherentNeighboursSource[i][s].score+=coherentNeighboursTarget[targetIndex][t].score+(k+k-s-t);
               std::cout<<" after "<<coherentNeighboursSource[i][s].score<<std::endl;
             }
           }
@@ -245,7 +244,9 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
   public:
     typename PointCloud<PointT>::Ptr transform(
         const typename PointCloud<PointT>::Ptr source,
-        const typename PointCloud<PointT>::Ptr target) {
+        const typename PointCloud<PointT>::Ptr target,
+        boost::shared_ptr<Configuration> configuration)
+    {
       typename PointCloud<PointXYZRGB>::Ptr sourceFiltered(
           new PointCloud<PointXYZRGB>);
       typename PointCloud<PointXYZRGB>::Ptr targetFiltered(
@@ -261,10 +262,14 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       PointWithScore b(2, 2);
       std::cout << "a<b" << (a < b);
 
-      //filter(source, sourceFiltered);
-      //filter(target, targetFiltered);
-      sourceFiltered=source;
-      targetFiltered=target;
+      if(configuration->getFilterMethod()==VOXELGRIDFILTER){
+    	  filter(source, sourceFiltered);
+    	  filter(target, targetFiltered);
+      }
+      else{
+    	  sourceFiltered=source;
+      	  targetFiltered=target;
+      }
 
       //createNormals<Normal>(sourceFiltered, source_normals);
       //createNormals<Normal>(targetFiltered, target_normals);
@@ -275,15 +280,17 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       vector<vector<PointWithScore>> coherentNeighboursSource;
       vector<vector<PointWithScore>> coherentNeighboursTarget;
 
+      int k = configuration->getNearestNeighborsToSearch();
+
       findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered,
-        coherentNeighboursSource);
+        coherentNeighboursSource, k);
       findCoherentNeighbours<PointT>(targetFiltered, sourceFiltered,
-        coherentNeighboursTarget);
+        coherentNeighboursTarget, k);
 /*      findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
           coherentNeighboursSource);
       findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
           coherentNeighboursTarget); */
-      refineScores(coherentNeighboursSource,coherentNeighboursTarget);
+      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
       return sourceFiltered;

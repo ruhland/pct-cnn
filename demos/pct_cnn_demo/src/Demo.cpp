@@ -61,7 +61,7 @@ void Demo::run(){
 		}
 		if(lastrequestedTransofmation< visualizer.getRequestedTransformations()){
 			lastrequestedTransofmation=visualizer.getRequestedTransformations();
-			visualizer.setTransformedPC(transformer->transform(sourceCloud,targetCloud));
+			visualizer.setTransformedPC(transformer->transform(sourceCloud,targetCloud,configuration));
 		}
 	}
 	kinect.disconnect();

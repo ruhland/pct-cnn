@@ -1,3 +1,5 @@
+#ifndef CONFIGURATION_HPP
+#define CONFIGURATION_HPP
 #include <string>
 enum FILTERMETHOD {NOFILTER,VOXELGRIDFILTER};
 
@@ -15,3 +17,4 @@ private:
 	std::string trim(const std::string& string);
 	void assignProperty(const std::string& property, const std::string& value);
 };
+#endif

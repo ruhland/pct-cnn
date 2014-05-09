@@ -34,7 +34,7 @@ public:
 
     typename PointCloud<PointT>::Ptr transform(
             const typename PointCloud<PointT>::Ptr source,
-            const typename PointCloud<PointT>::Ptr target)
+            const typename PointCloud<PointT>::Ptr target,boost::shared_ptr<Configuration> configuration)
     {
         source_cloud = *source;
         target_cloud = *target;
