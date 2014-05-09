@@ -12,7 +12,7 @@ and [sensorkinect-git](https://aur.archlinux.org/packages/sensorkinect-git/).
 In order to execute the examples the kernel module gspca_kinect must be removed.
 For one session this can be done with:
 ```
-sudo modprobe -r gspca_kinect
+$ sudo modprobe -r gspca_kinect
 ```
 To disable the module permanently, add an entry to modprobe.d:
 ```
