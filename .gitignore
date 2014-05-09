@@ -9,4 +9,7 @@
 **/.project
 **/.cproject
 
+# Demo Project config file
+**/config.txt
+
 faces
