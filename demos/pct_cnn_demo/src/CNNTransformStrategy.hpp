@@ -158,6 +158,18 @@ private:
 			}
 		}
 	}
+	void findPerfectCoherentNeighbours(PointCloud<PointXYZRGB>::Ptr sourceFeatures,
+				PointCloud<PointXYZRGB>::Ptr targetFeatures,
+				vector<vector<PointWithScore>> &coherentNeighbours) {
+					coherentNeighbours.resize(sourceFeatures->size());
+					for (size_t i = 0; i < sourceFeatures->size(); i++) {
+						for (int y = 0; y < NEARESTNEIGHBORSTOSEARCH; y++) {
+							PointWithScore a(i, 0);
+							coherentNeighbours[i].push_back(a);
+						}
+					}
+	}
+
 
 	void replaceColors(PointCloud<PointXYZRGB>::Ptr &src,
 			PointCloud<PointXYZRGB>::Ptr &target,
@@ -187,17 +199,18 @@ private:
 			vector<vector<PointWithScore>> &coherentNeighboursTarget) {
 		for(int i=0;i<coherentNeighboursSource.size();i++){
 			std::sort(coherentNeighboursSource[i].begin(),coherentNeighboursSource[i].end());
-			std::cout<<std::endl<<"Refine Score for point "<<i<<std::endl;
+			//std::cout<<std::endl<<"Refine Score for point "<<i<<std::endl;
 			for(int s=0;s<coherentNeighboursSource[i].size();s++){
 				int targetIndex=coherentNeighboursSource[i][s].index;
 				std::sort(coherentNeighboursTarget[targetIndex].begin(),coherentNeighboursTarget[targetIndex].end());
-				std:: cout<<" Target "<< targetIndex<<":";
+				//std:: cout<<" Target "<< targetIndex<<":";
 				//std::cout<<"Targetsize"<<coherentNeighboursTarget.size()<<","<<coherentNeighboursTarget[targetIndex].size();
 				for(int t=0;t<coherentNeighboursTarget[targetIndex].size();t++){
-					std::cout<<t<<", ";
+					//std::cout<<t<<", ";
 					if(coherentNeighboursTarget[targetIndex][t].index==i){
-						std::cout<<" Found corresponding forward backward search points\n";
+						std::cout<<" Found corresponding forward backward search points source: "<<i<<" target:"<<targetIndex <<" Score before:"<<coherentNeighboursSource[i][s].score;
 						coherentNeighboursSource[i][s].score+=coherentNeighboursTarget[targetIndex][t].score+(NEARESTNEIGHBORSTOSEARCH+NEARESTNEIGHBORSTOSEARCH-s-t);
+						std::cout<<" after "<<coherentNeighboursSource[i][s].score<<std::endl;
 					}
 				}
 			}
@@ -223,19 +236,27 @@ public:
 		PointWithScore b(2, 2);
 		std::cout << "a<b" << (a < b);
 
-		filter(source, sourceFiltered);
-		filter(target, targetFiltered);
-		create_normals<Normal>(sourceFiltered, source_normals);
-		create_normals<Normal>(targetFiltered, target_normals);
+		//filter(source, sourceFiltered);
+		//filter(target, targetFiltered);
+		sourceFiltered=source;
+		targetFiltered=target;
+
+		//create_normals<Normal>(sourceFiltered, source_normals);
+		//create_normals<Normal>(targetFiltered, target_normals);
 		/*compute_PFH_features(sourceFiltered, source_normals,
 		 source_descriptors);
 		 compute_PFH_features(targetFiltered, target_normals,
 		 target_descriptors);*/
 		vector<vector<PointWithScore>> coherentNeighboursSource;
 		vector<vector<PointWithScore>> coherentNeighboursTarget;
-		findCoherentNeighbours(sourceFiltered, targetFiltered,
+
+		/*findCoherentNeighbours(sourceFiltered, targetFiltered,
 				coherentNeighboursSource);
 		findCoherentNeighbours(targetFiltered, sourceFiltered,
+				coherentNeighboursTarget);*/
+		findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
+				coherentNeighboursSource);
+		findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
 				coherentNeighboursTarget);
 		refineScores(coherentNeighboursSource,coherentNeighboursTarget);
 		replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
