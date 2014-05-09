@@ -69,7 +69,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       {
         NormalEstimation<PointT, NormalT> nest;
 
-        cout << "[PFHTransformationStrategy::createNormals] Input cloud "
+        cout << "[CNNTransformationStrategy::createNormals] Input cloud "
           << cloud->points.size() << " points" << endl;
 
         nest.setInputCloud(cloud);
@@ -83,7 +83,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           typename PointCloud<PointT>::Ptr cloud_filtered,
           float leaf_size = 0.01f)
       {
-        cout << "[PFHTransformationStrategy::filter] Input cloud:" << endl
+        cout << "[CNNTransformationStrategy::filter] Input cloud:" << endl
           << "    " << cloud->points.size() << " points" << endl;
 
         typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
@@ -93,7 +93,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vox_grid.setSaveLeafLayout(true);
         vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
 
-        cout << "[PFHTransformationStrategy::filter] Creating a voxel grid:"
+        cout << "[CNNTransformationStrategy::filter] Creating a voxel grid:"
           << endl << "    leaf size: [" << leaf_size << ", " << leaf_size
           << ", " << leaf_size << "]" << endl;
 
@@ -101,7 +101,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         // vox_grid.filter(*tmp_ptr1);
         vox_grid.filter(*cloud_filtered);
 
-        cout << "[PFHTransformationStrategy::filter] Result of voxel grid"
+        cout << "[CNNTransformationStrategy::filter] Result of voxel grid"
           << " filtering:" << endl << "    "
           << cloud_filtered->points.size() << " points remaining" << endl;
 
@@ -122,7 +122,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         pfh_est.setInputCloud(points);
         pfh_est.setInputNormals(normals);
 
-        cout << "[PFH Transformation : PFH Estimation]" << endl;
+        cout << "[CNNTransformStrategy::computePFHFeatures]" << endl;
         cout << "  setting input cloud: " << points->size() << " points"
           << endl;
         cout << "  setting input normals: " << normals->size() << " normals"
@@ -274,6 +274,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
       switch (configuration->getFeatureFormat()) {
         case PFHFEATURE:
+          std::cout << "[CNNTransformStrategy::transform] Using PFH features." << std::endl;
           createNormals<Normal>(targetFiltered, target_normals);
           createNormals<Normal>(sourceFiltered, source_normals);
           computePFHFeatures(sourceFiltered, source_normals, source_descriptors);
@@ -283,17 +284,18 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
           break;
         case XYZRGBFEATURE:
+          std::cout << "[CNNTransformStrategy::transform] Using xyzrgb points directly as features." << std::endl;
           findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered, coherentNeighboursSource, k);
           findCoherentNeighbours<PointT>(targetFiltered, sourceFiltered, coherentNeighboursTarget, k);
           break;
         case PERFECTFEATURE:
-          std::cout << "Using perfect point matching." << std::endl;
-          std::cout << "Warning: This can only be used with preconstructed sample faces." << std::endl;
+          std::cout << "[CNNTransformStrategy::transform] Using perfect point matching." << std::endl;
+          std::cout << "  Warning: This can only be used with preconstructed sample faces." << std::endl;
           findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursSource);
           findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursTarget);
           break;
         default:
-          std::cout << "Feature Format not set." << std::endl;
+          std::cout << "[CNNTransformStrategy::transform] Feature Format not set." << std::endl;
       }
 
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
