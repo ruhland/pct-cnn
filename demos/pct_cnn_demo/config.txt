@@ -1,2 +1,0 @@
-FilterMethod NOFILTER # Options NOFILTER, VOXELGRIDFILTER
-NearestNeighborsToSearch 5 # Nearest Neighbors in other cloud to consider
