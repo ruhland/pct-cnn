@@ -27,6 +27,7 @@ DemoVisualizer::DemoVisualizer() :
 	viewer.createViewPort(0.0, 0.0, 0.33, 1.0, vp1);
 	viewer.createViewPort(0.33, 0.0, 0.66, 1.0, vp2);
 	viewer.createViewPort(0.66, 0.0, 1.0, 1.0, vp3);
+	viewer.setBackgroundColor(0.0,1.0,0.0);
 
 	boost::function<
 				void(const pcl::visualization::KeyboardEvent& event)> i = boost::bind(
