@@ -57,86 +57,86 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
     };
 
     /** \brief Calculate normals for every point in the given cloud.
-      * \param[in] cloud the input cloud
-      * \param[in] normal_radius the parameter for the radius search
-      * \param[out] normals the output cloud with surface normals
-      */
+     * \param[in] cloud the input cloud
+     * \param[in] normal_radius the parameter for the radius search
+     * \param[out] normals the output cloud with surface normals
+     */
     template<typename NormalT>
-    void
-    createNormals(typename PointCloud<PointT>::Ptr cloud,
-                  typename PointCloud<NormalT>::Ptr normals,
-                  float normal_radius = 0.1)
-    {
-      NormalEstimation<PointT, NormalT> nest;
+      void
+      createNormals(typename PointCloud<PointT>::Ptr cloud,
+          typename PointCloud<NormalT>::Ptr normals,
+          float normal_radius = 0.1)
+      {
+        NormalEstimation<PointT, NormalT> nest;
 
-      cout << "[PFHTransformationStrategy::createNormals] Input cloud "
-        << cloud->points.size() << " points" << endl;
+        cout << "[PFHTransformationStrategy::createNormals] Input cloud "
+          << cloud->points.size() << " points" << endl;
 
-      nest.setInputCloud(cloud);
-      nest.setSearchMethod(typename search::KdTree<PointT>::Ptr(new search::KdTree<PointT>));
-      nest.setRadiusSearch(normal_radius);
-      nest.compute(*normals);
-    };
-
-    void
-    filter(typename PointCloud<PointT>::Ptr cloud,
-           typename PointCloud<PointT>::Ptr cloud_filtered,
-           float leaf_size = 0.01f)
-    {
-      cout << "[PFHTransformationStrategy::filter] Input cloud:" << endl
-        << "    " << cloud->points.size() << " points" << endl;
-
-      typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
-
-      VoxelGrid<PointT> vox_grid;
-      vox_grid.setInputCloud(cloud);
-      vox_grid.setSaveLeafLayout(true);
-      vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
-
-      cout << "[PFHTransformationStrategy::filter] Creating a voxel grid:"
-        << endl << "    leaf size: [" << leaf_size << ", " << leaf_size
-        << ", " << leaf_size << "]" << endl;
-
-      // Skip the rest...
-      // vox_grid.filter(*tmp_ptr1);
-      vox_grid.filter(*cloud_filtered);
-
-      cout << "[PFHTransformationStrategy::filter] Result of voxel grid"
-        << " filtering:" << endl << "    "
-        << cloud_filtered->points.size() << " points remaining" << endl;
-
-      return;
-    };
+        nest.setInputCloud(cloud);
+        nest.setSearchMethod(typename search::KdTree<PointT>::Ptr(new search::KdTree<PointT>));
+        nest.setRadiusSearch(normal_radius);
+        nest.compute(*normals);
+      };
 
     void
-    computePFHFeatures(PointCloud<PointXYZRGB>::Ptr &points,
-                       PointCloud<Normal>::Ptr &normals,
-                       PointCloud<PFHSignature125>::Ptr &descriptors,
-                       float feature_radius = 0.08)
-    {
-      PFHEstimation<PointXYZRGB, Normal, PFHSignature125> pfh_est;
+      filter(typename PointCloud<PointT>::Ptr cloud,
+          typename PointCloud<PointT>::Ptr cloud_filtered,
+          float leaf_size = 0.01f)
+      {
+        cout << "[PFHTransformationStrategy::filter] Input cloud:" << endl
+          << "    " << cloud->points.size() << " points" << endl;
 
-      pfh_est.setSearchMethod(search::KdTree<PointXYZRGB>::Ptr(new search::KdTree<PointXYZRGB>));
-      pfh_est.setRadiusSearch(feature_radius);
+        typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
 
-      pfh_est.setInputCloud(points);
-      pfh_est.setInputNormals(normals);
+        VoxelGrid<PointT> vox_grid;
+        vox_grid.setInputCloud(cloud);
+        vox_grid.setSaveLeafLayout(true);
+        vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
 
-      cout << "[PFH Transformation : PFH Estimation]" << endl;
-      cout << "  setting input cloud: " << points->size() << " points"
-        << endl;
-      cout << "  setting input normals: " << normals->size() << " normals"
-        << endl;
+        cout << "[PFHTransformationStrategy::filter] Creating a voxel grid:"
+          << endl << "    leaf size: [" << leaf_size << ", " << leaf_size
+          << ", " << leaf_size << "]" << endl;
 
-      for (int i = 0; i < normals->points.size(); i++) {
-        if (!pcl::isFinite<pcl::Normal>(normals->points[i])) {
-          cerr << "normal " << i << " is not finite\n";
-          // normals->points[i]=new pcl::Normal();
+        // Skip the rest...
+        // vox_grid.filter(*tmp_ptr1);
+        vox_grid.filter(*cloud_filtered);
+
+        cout << "[PFHTransformationStrategy::filter] Result of voxel grid"
+          << " filtering:" << endl << "    "
+          << cloud_filtered->points.size() << " points remaining" << endl;
+
+        return;
+      };
+
+    void
+      computePFHFeatures(PointCloud<PointXYZRGB>::Ptr &points,
+          PointCloud<Normal>::Ptr &normals,
+          PointCloud<PFHSignature125>::Ptr &descriptors,
+          float feature_radius = 0.08)
+      {
+        PFHEstimation<PointXYZRGB, Normal, PFHSignature125> pfh_est;
+
+        pfh_est.setSearchMethod(search::KdTree<PointXYZRGB>::Ptr(new search::KdTree<PointXYZRGB>));
+        pfh_est.setRadiusSearch(feature_radius);
+
+        pfh_est.setInputCloud(points);
+        pfh_est.setInputNormals(normals);
+
+        cout << "[PFH Transformation : PFH Estimation]" << endl;
+        cout << "  setting input cloud: " << points->size() << " points"
+          << endl;
+        cout << "  setting input normals: " << normals->size() << " normals"
+          << endl;
+
+        for (int i = 0; i < normals->points.size(); i++) {
+          if (!pcl::isFinite<pcl::Normal>(normals->points[i])) {
+            cerr << "normal " << i << " is not finite\n";
+            // normals->points[i]=new pcl::Normal();
+          }
         }
-      }
 
-      pfh_est.compute(*descriptors);
-    };
+        pfh_est.compute(*descriptors);
+      };
 
     /**
      * Find the the k nearest neighbors in the target cloud for every 
@@ -147,32 +147,32 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
      * query point.
      */
     template<typename FeatureT>
-    void
-    findCoherentNeighbours(typename PointCloud<FeatureT>::Ptr source_features,
-                           typename PointCloud<FeatureT>::Ptr target_features,
-                           vector<vector<PointWithScore>> &coherent_neighbours,
-                           int k = 5)
-    {
-      coherent_neighbours.resize(source_features->size());
+      void
+      findCoherentNeighbours(typename PointCloud<FeatureT>::Ptr source_features,
+          typename PointCloud<FeatureT>::Ptr target_features,
+          vector<vector<PointWithScore>> &coherent_neighbours,
+          int k = 5)
+      {
+        coherent_neighbours.resize(source_features->size());
 
-      pcl::KdTreeFLANN<FeatureT> searchtree;
-      searchtree.setInputCloud(target_features);
+        pcl::KdTreeFLANN<FeatureT> searchtree;
+        searchtree.setInputCloud(target_features);
 
-      vector<int> k_indices(k);
-      vector<float> k_squared_distances(k);
+        vector<int> k_indices(k);
+        vector<float> k_squared_distances(k);
 
-      for (size_t i = 0; i < source_features->size(); i++) {
+        for (size_t i = 0; i < source_features->size(); i++) {
 
-        std::cout << (*source_features)[i];
-        std::cout << std::endl;
+          std::cout << (*source_features)[i];
+          std::cout << std::endl;
 
-        searchtree.nearestKSearch(*source_features, i, k, k_indices, k_squared_distances);
-        for (int y = 0; y < k; y++) {
-          PointWithScore a(k_indices[y], k_squared_distances[y]);
-          coherent_neighbours[i].push_back(a);
+          searchtree.nearestKSearch(*source_features, i, k, k_indices, k_squared_distances);
+          for (int y = 0; y < k; y++) {
+            PointWithScore a(k_indices[y], k_squared_distances[y]);
+            coherent_neighbours[i].push_back(a);
+          }
         }
       }
-    }
 
     /**
      * Find the perfect neighbor for every point in the source features cloud.
@@ -180,18 +180,18 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
      * inverted.
      */
     void
-    findPerfectCoherentNeighbours(PointCloud<PointXYZRGB>::Ptr source_features,
-                                  PointCloud<PointXYZRGB>::Ptr target_features,
-                                  vector<vector<PointWithScore>> &coherent_neighbours,int k=5)
-    {
-      coherent_neighbours.resize(source_features->size());
-      for (size_t i = 0; i < source_features->size(); i++) {
-        for (int y = 0; y < k; y++) {
-          PointWithScore a(i, 0);
-          coherent_neighbours[i].push_back(a);
+      findPerfectCoherentNeighbours(PointCloud<PointXYZRGB>::Ptr source_features,
+          PointCloud<PointXYZRGB>::Ptr target_features,
+          vector<vector<PointWithScore>> &coherent_neighbours,int k=5)
+      {
+        coherent_neighbours.resize(source_features->size());
+        for (size_t i = 0; i < source_features->size(); i++) {
+          for (int y = 0; y < k; y++) {
+            PointWithScore a(i, 0);
+            coherent_neighbours[i].push_back(a);
+          }
         }
       }
-    }
 
     void replaceColors(PointCloud<PointXYZRGB>::Ptr &src,
         PointCloud<PointXYZRGB>::Ptr &target,
@@ -232,7 +232,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           for (int t = 0; t < coherentNeighboursTarget[targetIndex].size(); t++) {
             //std::cout<<t<<", ";
             if (coherentNeighboursTarget[targetIndex][t].index == i) {
-              std::cout<<" Found corresponding forward backward search points source: "<<i<<" target:"<<targetIndex <<" Score before:"<<coherentNeighboursSource[i][s].score;
+              std::cout << " Found corresponding forward backward search points source: " << i << " target:" << targetIndex << " Score before:" << coherentNeighboursSource[i][s].score;
               coherentNeighboursSource[i][s].score+=coherentNeighboursTarget[targetIndex][t].score+(k+k-s-t);
               std::cout<<" after "<<coherentNeighboursSource[i][s].score<<std::endl;
             }
@@ -258,55 +258,47 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       PointCloud<PFHSignature125>::Ptr target_descriptors(
           new PointCloud<PFHSignature125>);
 
-      PointWithScore a(5, 5);
-      PointWithScore b(2, 2);
-      std::cout << "a<b" << (a < b);
-
-      if(configuration->getFilterMethod()==VOXELGRIDFILTER){
-    	  filter(source, sourceFiltered,configuration->getFilterLeafSize());
-    	  filter(target, targetFiltered,configuration->getFilterLeafSize());
+      if(configuration->getFilterMethod() == VOXELGRIDFILTER){
+        filter(source, sourceFiltered,configuration->getFilterLeafSize());
+        filter(target, targetFiltered,configuration->getFilterLeafSize());
       }
       else{
-    	  sourceFiltered=source;
-      	  targetFiltered=target;
+        sourceFiltered=source;
+        targetFiltered=target;
       }
-
-      createNormals<Normal>(sourceFiltered, source_normals);
-      createNormals<Normal>(targetFiltered, target_normals);
-      computePFHFeatures(sourceFiltered, source_normals,
-        source_descriptors);
-        computePFHFeatures(targetFiltered, target_normals,
-        target_descriptors);
-      vector<vector<PointWithScore>> coherentNeighboursSource;
-      vector<vector<PointWithScore>> coherentNeighboursTarget;
 
       int k = configuration->getNearestNeighborsToSearch();
 
-      /*
-       *  findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered,
-        coherentNeighboursSource, k);
-      findCoherentNeighbours<PointT>(targetFiltered, sourceFiltered,
-        coherentNeighboursTarget, k);
-       */
+      vector<vector<PointWithScore>> coherentNeighboursSource;
+      vector<vector<PointWithScore>> coherentNeighboursTarget;
 
-      findCoherentNeighbours<PFHSignature125>(source_descriptors, target_descriptors,
-        coherentNeighboursSource, k);
-      findCoherentNeighbours<PFHSignature125>(target_descriptors, source_descriptors,
-        coherentNeighboursTarget, k);
+      switch (configuration->getFeatureFormat()) {
+        case PFHFEATURE:
+          createNormals<Normal>(targetFiltered, target_normals);
+          createNormals<Normal>(sourceFiltered, source_normals);
+          computePFHFeatures(sourceFiltered, source_normals, source_descriptors);
+          computePFHFeatures(targetFiltered, target_normals, target_descriptors);
+          findCoherentNeighbours<PFHSignature125>(source_descriptors, target_descriptors, coherentNeighboursSource, k);
+          findCoherentNeighbours<PFHSignature125>(target_descriptors, source_descriptors, coherentNeighboursTarget, k);
+          refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
+          break;
+        case XYZRGBFEATURE:
+          findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered, coherentNeighboursSource, k);
+          findCoherentNeighbours<PointT>(targetFiltered, sourceFiltered, coherentNeighboursTarget, k);
+          break;
+        case PERFECTFEATURE:
+          std::cout << "Using perfect point matching." << std::endl;
+          std::cout << "Warning: This can only be used with preconstructed sample faces." << std::endl;
+          findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursSource);
+          findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursTarget);
+          break;
+        default:
+          std::cout << "Feature Format not set." << std::endl;
+      }
 
-
-/*      findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
-          coherentNeighboursSource);
-      findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
-          coherentNeighboursTarget); */
-      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
       return sourceFiltered;
-    }
-
-    void loadDefaultPresets() {
-      std::cout << "Default presets loaded..." << std::endl;
     }
 };
 
