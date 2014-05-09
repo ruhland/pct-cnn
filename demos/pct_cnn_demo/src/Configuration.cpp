@@ -9,6 +9,8 @@ Configuration::Configuration(){
 
 void Configuration::setDefaultConfigurations(){
 	filter=NOFILTER;
+	filterLeafSize=0.01f;
+	nearestNeighborsToSearch=5;
 }
 
 
@@ -48,6 +50,15 @@ void Configuration::assignProperty(const std::string& property, const std::strin
 		}
 
 	}
+	else if(property.compare("FILTERLEAFSIZE")==0){
+			try{
+				filterLeafSize=std::stof(value);
+			}
+			catch(const std::invalid_argument& e){
+				std::cerr<<"Wrong Argument "<<value<<std::endl;
+			}
+
+		}
 	else{
 		std::cerr<<"Unknown Property "<<property<<std::endl;
 	}
@@ -62,7 +73,9 @@ std::string Configuration::trim(const std::string& string){
 	return string.substr(start,end-start+1);
 }
 
-
+float Configuration::getFilterLeafSize(){
+	return filterLeafSize;
+}
 
 FILTERMETHOD Configuration::getFilterMethod(){
 	return filter;

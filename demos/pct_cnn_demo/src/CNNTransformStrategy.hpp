@@ -263,29 +263,38 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       std::cout << "a<b" << (a < b);
 
       if(configuration->getFilterMethod()==VOXELGRIDFILTER){
-    	  filter(source, sourceFiltered);
-    	  filter(target, targetFiltered);
+    	  filter(source, sourceFiltered,configuration->getFilterLeafSize());
+    	  filter(target, targetFiltered,configuration->getFilterLeafSize());
       }
       else{
     	  sourceFiltered=source;
       	  targetFiltered=target;
       }
 
-      //createNormals<Normal>(sourceFiltered, source_normals);
-      //createNormals<Normal>(targetFiltered, target_normals);
-      /*computePFHFeatures(sourceFiltered, source_normals,
+      createNormals<Normal>(sourceFiltered, source_normals);
+      createNormals<Normal>(targetFiltered, target_normals);
+      computePFHFeatures(sourceFiltered, source_normals,
         source_descriptors);
         computePFHFeatures(targetFiltered, target_normals,
-        target_descriptors);*/
+        target_descriptors);
       vector<vector<PointWithScore>> coherentNeighboursSource;
       vector<vector<PointWithScore>> coherentNeighboursTarget;
 
       int k = configuration->getNearestNeighborsToSearch();
 
-      findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered,
+      /*
+       *  findCoherentNeighbours<PointT>(sourceFiltered, targetFiltered,
         coherentNeighboursSource, k);
       findCoherentNeighbours<PointT>(targetFiltered, sourceFiltered,
         coherentNeighboursTarget, k);
+       */
+
+      findCoherentNeighbours<PFHSignature125>(source_descriptors, target_descriptors,
+        coherentNeighboursSource, k);
+      findCoherentNeighbours<PFHSignature125>(target_descriptors, source_descriptors,
+        coherentNeighboursTarget, k);
+
+
 /*      findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
           coherentNeighboursSource);
       findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
