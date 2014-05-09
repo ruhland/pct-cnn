@@ -28,7 +28,7 @@ DemoVisualizer::DemoVisualizer() :
 	viewer.createViewPort(0.33, 0.0, 0.66, 1.0, vp2);
 	viewer.createViewPort(0.66, 0.0, 1.0, 1.0, vp3);
 	viewer.setBackgroundColor(0.0,1.0,0.0);
-
+        viewer.addCoordinateSystem();
 	boost::function<
 				void(const pcl::visualization::KeyboardEvent& event)> i = boost::bind(
 				&DemoVisualizer::keyboardEventOccurred, this, _1);
@@ -118,8 +118,6 @@ void DemoVisualizer::show() {
 			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTarget);
 	viewer.setPointCloudRenderingProperties(
 				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
-	viewer.setPointCloudRenderingProperties(
-				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTransformed);
 	viewer.setCameraPosition(0, 0, 9, 0, 1, 0, 0);
 	viewer.setCameraClipDistances(0.01f, 1.0e10);
 	viewer.setSize(1280, 1024); // Visualiser window size
