@@ -1,0 +1,58 @@
+#ifndef DEMO_HEADER
+#define DEMO_HEADER
+
+#include <string>
+
+#include <pcl/point_types.h>
+
+#include "DemoVisualizer.hpp"
+#include "PFHTransformStrategy.hpp"
+<<<<<<< HEAD
+#include "KinectGrabber.hpp"
+
+class Demo {
+=======
+>>>>>>> c5a05efc2961f409a1744a2877ee126721b89c40
+
+using namespace std;
+using namespace pcl;
+
+class Demo
+{
+public:
+
+    Demo();
+
+    void enableKinect();
+<<<<<<< HEAD
+    void setTargetFile(const std::string& name);
+    void setSourceFile(const std::string& output);
+=======
+
+    void setSourceCloud(const std::string &name,
+            PointCloud<PointXYZRGB>::Ptr &source_cloud);
+
+    void setTargetCloud(const std::string &output,
+            PointCloud<PointXYZRGB>::Ptr &target_cloud);
+
+    void transformClouds(PointCloud<PointXYZRGB>::Ptr source,
+            PointCloud<PointXYZRGB>::Ptr target);
+
+    void setOutputFile(const std::string &output);
+
+>>>>>>> c5a05efc2961f409a1744a2877ee126721b89c40
+    void run();
+
+private:
+<<<<<<< HEAD
+	DemoVisualizer	visualizer;
+	TransformStrategy *transformer;
+	KinectGrabber kinect;
+=======
+
+    DemoVisualizer visualizer;
+    TransformStrategy<PointXYZRGB> *transformer;
+>>>>>>> c5a05efc2961f409a1744a2877ee126721b89c40
+
+};
+#endif

@@ -20,8 +20,8 @@
 #pragma warning(pop)
 #endif
 
-Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXYZRGB>),sourceCloud(new pcl::PointCloud<pcl::PointXYZRGB>){
-   std::cout<<"Demo created";
+Demo::Demo(): visualizer(),kinect(),targetCloud(new pcl::PointCloud<pcl::PointXYZRGB>),sourceCloud(new pcl::PointCloud<pcl::PointXYZRGB>),configuration(new Configuration()){
+   std::cout<<"Demo created"<<std::endl;
   // transformer= new PFHTransformStrategy<PointXYZRGB>();
    transformer= new CNNTransformStrategy<PointXYZRGB>();
 }
@@ -32,6 +32,11 @@ void Demo::setTargetFile(const std::string& name){
 	DemoVisualizer::scaleToXAxis(targetCloud,		1.0f);
 	visualizer.setTargetPC(targetCloud);
 }
+void Demo::setConfigFile(const std::string& file){
+	configuration->loadFromFile(file);
+	std::cout<<"Configuration read: nearestNeighbors: "<<configuration->getNearestNeighborsToSearch()<<std::endl;
+}
+
 void Demo::setSourceFile(const std::string& output){
 	pcl::io::loadPCDFile (output, *sourceCloud);
 	DemoVisualizer::moveToCenter(sourceCloud);
@@ -59,6 +64,8 @@ void Demo::run(){
 			visualizer.setTransformedPC(transformer->transform(sourceCloud,targetCloud));
 		}
 	}
+	kinect.disconnect();
+	extractFace.join();
 }
 
 int main (int argc, char **argv)
@@ -70,6 +77,7 @@ int main (int argc, char **argv)
         ("help", "produce help message")
         ("t",boost::program_options::value<std::string>()->required(),"target file (required)")
         ("s",boost::program_options::value<std::string>(),"source file")
+        ("f",boost::program_options::value<std::string>(),"file for parameter configuration")
         ("k","enable Kinect instead of source file")
     ;
 
@@ -89,7 +97,10 @@ int main (int argc, char **argv)
     demo.setTargetFile(vm["t"].as<std::string>());
     if(vm.count("s"))
         demo.setSourceFile(vm["s"].as<std::string>());
+    if(vm.count("f"))
+    	demo.setConfigFile(vm["f"].as<std::string>());
     demo.run();
+    std::cout<<"Program exit\n";
     }
     /*catch(boost::program_options::error& e){
             std::cout<<"Exception in boost :"<<e.what();
@@ -97,5 +108,5 @@ int main (int argc, char **argv)
     catch(const std::exception& e){
         std::cout<<"Exception in programm:"<<e.what()<<std::endl;    
     }
-     
+    return 0;
 }

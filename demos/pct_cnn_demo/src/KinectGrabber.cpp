@@ -30,6 +30,7 @@ KinectGrabber::KinectGrabber() :
 }
 
 bool KinectGrabber::connect() {
+	std::lock_guard<std::mutex> lock(connectMutex);
 	openniGrabber = new pcl::OpenNIGrabber();
 	if (openniGrabber == 0)
 		return false;
@@ -46,7 +47,19 @@ bool KinectGrabber::connect() {
 	openniGrabber->start();
 	return true;
 }
+
+void KinectGrabber::disconnect(){
+	if(!isConnected())
+		return;
+	std::lock_guard<std::mutex> lock(connectMutex);
+	std::lock_guard<std::mutex> lock2(latestFaceMutex);
+	openniGrabber->stop();
+	openniGrabber=0;
+	return;
+}
+
 bool KinectGrabber::isConnected() {
+	std::lock_guard<std::mutex> lock(connectMutex);
 	return openniGrabber != 0;
 }
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr KinectGrabber::getLatestFace() {
@@ -55,7 +68,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr KinectGrabber::getLatestFace() {
 }
 
 void KinectGrabber::extractFaceLoop() {
-	while (true) {
+	while (isConnected()) {
 		extractFace();
 	}
 }

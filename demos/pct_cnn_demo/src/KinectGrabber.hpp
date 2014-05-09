@@ -54,6 +54,7 @@ public:
 	 * \brief check if kinect is currently connected
 	 */
 	bool isConnected();
+	void disconnect();
 	~KinectGrabber();
 
 private:
@@ -65,6 +66,7 @@ private:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr latestFace;
 	pcl::Grabber* openniGrabber;
 	std::mutex latestFaceMutex;
+	std::mutex connectMutex;
 	boost::shared_ptr<openni_wrapper::Image> lastImage;
 	boost::shared_ptr<openni_wrapper::DepthImage> lastDepthImage;
 	std::string faceCloudId;
