@@ -11,6 +11,7 @@ void Configuration::setDefaultConfigurations() {
 	filter = NOFILTER;
 	filterLeafSize = 0.01f;
 	nearestNeighborsToSearch = 5;
+	featureFormat=XYZRGBFEATURE;
 }
 
 void Configuration::loadFromFile(const std::string &filename) {

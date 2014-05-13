@@ -26,6 +26,19 @@
 #include <algorithm>
 #include <opencv/cv.h>
 
+namespace pcl {
+typedef union {
+	struct {
+		unsigned char Blue;
+		unsigned char Green;
+		unsigned char Red;
+		unsigned char Alpha;
+	};
+	float float_value;
+	uint32_t long_value;
+} RGBValue;
+}
+
 template<typename PointT>
 class CNNTransformStrategy : public TransformStrategy<PointT>
 {
@@ -162,13 +175,9 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vector<float> k_squared_distances(k);
 
         for (size_t i = 0; i < source_features->size(); i++) {
-
-          std::cout << (*source_features)[i];
-          std::cout << std::endl;
-
           searchtree.nearestKSearch(*source_features, i, k, k_indices, k_squared_distances);
           for (int y = 0; y < k; y++) {
-            PointWithScore a(k_indices[y], k_squared_distances[y]);
+            PointWithScore a(k_indices[y], 1/k_squared_distances[y]);
             coherent_neighbours[i].push_back(a);
           }
         }
@@ -197,15 +206,22 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         PointCloud<PointXYZRGB>::Ptr &target,
         vector<vector<PointWithScore>> &coherentNeighbours)
     {
+    	RGBValue red;
+    	red.Red=0xff;
+    	red.Alpha=0;
+    	red.Blue=0;
+    	red.Green=0;
       for (int i = 0; i < src->size(); i++) {
         pcl::PointXYZRGB& ps = src->points[i];
         if (i > coherentNeighbours.size()
             || coherentNeighbours[i].size() == 0) {
           std::cout << "Error Queue for point " << i
             << " dos not exist \n";
+          ps.rgba =red.long_value;
+          continue;
         }
         std::sort(coherentNeighbours[i].begin(),coherentNeighbours[i].end());
-        int targetpoint = coherentNeighbours[i].front().index;
+        int targetpoint = coherentNeighbours[i].back().index;
         if (targetpoint < 0 || targetpoint >= target->size()) {
           std::cout << " ERROR targetpoint " << targetpoint
             << " out of range" << std::endl;
@@ -217,29 +233,42 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       }
     }
 
+    float getMeanSquaredFaceError(vector<vector<PointWithScore>> &coherentNeighbors){
+    	float error=0;
+    	for(int s=0;s<coherentNeighbors.size();s++){
+    		if(coherentNeighbors[s].size()==0)
+    			continue;
+    		int t = coherentNeighbors[s].back().index;
+    		error+=(s-t)*(s-t);
+    	}
+    	return error;
+    }
+
     void refineScores(
-        vector<vector<PointWithScore>> &coherentNeighboursSource,
-        vector<vector<PointWithScore>> &coherentNeighboursTarget,int k)
-    {
-      for (int i = 0; i < coherentNeighboursSource.size(); i++) {
-        std::sort(coherentNeighboursSource[i].begin(), coherentNeighboursSource[i].end());
-        //std::cout<<std::endl<<"Refine Score for point "<<i<<std::endl;
-        for (int s = 0; s < coherentNeighboursSource[i].size(); s++) {
-          int targetIndex = coherentNeighboursSource[i][s].index;
-          std::sort(coherentNeighboursTarget[targetIndex].begin(), coherentNeighboursTarget[targetIndex].end());
-          //std:: cout<<" Target "<< targetIndex<<":";
-          //std::cout<<"Targetsize"<<coherentNeighboursTarget.size()<<","<<coherentNeighboursTarget[targetIndex].size();
-          for (int t = 0; t < coherentNeighboursTarget[targetIndex].size(); t++) {
-            //std::cout<<t<<", ";
-            if (coherentNeighboursTarget[targetIndex][t].index == i) {
-              std::cout << " Found corresponding forward backward search points source: " << i << " target:" << targetIndex << " Score before:" << coherentNeighboursSource[i][s].score;
-              coherentNeighboursSource[i][s].score+=coherentNeighboursTarget[targetIndex][t].score+(k+k-s-t);
-              std::cout<<" after "<<coherentNeighboursSource[i][s].score<<std::endl;
+          vector<vector<PointWithScore>> &coherentNeighboursSource,
+          vector<vector<PointWithScore>> &coherentNeighboursTarget,int k)
+      {
+        for (int sourceIndex = 0; sourceIndex < coherentNeighboursSource.size(); sourceIndex++) {
+          bool foundMatch=false;
+          std::sort(coherentNeighboursSource[sourceIndex].begin(), coherentNeighboursSource[sourceIndex].end());
+          for (int sourceNeighborIndex = 0; sourceNeighborIndex < coherentNeighboursSource[sourceIndex].size(); sourceNeighborIndex++) {
+            int targetIndex = coherentNeighboursSource[sourceIndex][sourceNeighborIndex].index;
+            std::sort(coherentNeighboursTarget[targetIndex].begin(), coherentNeighboursTarget[targetIndex].end());
+            for (int targetNeighborIndex = 0; targetNeighborIndex < coherentNeighboursTarget[targetIndex].size(); targetNeighborIndex++) {
+              if (coherentNeighboursTarget[targetIndex][targetNeighborIndex].index == sourceIndex) {
+                std::cout<<" redefine source: "<<sourceIndex<<" ("<<sourceNeighborIndex<<") target:"<<targetIndex <<" ("<<targetNeighborIndex<<") Score before:"<<coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score;
+                coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score*=(targetNeighborIndex+1);
+                std::cout<<" after "<<coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score<<std::endl;
+                foundMatch=true;
+              }
             }
+          }
+          if(!foundMatch){
+        	  coherentNeighboursSource[sourceIndex].clear();
+        	  std::cout<<"found no match source: "<<sourceIndex<<std::endl;
           }
         }
       }
-    }
 
   public:
     typename PointCloud<PointT>::Ptr transform(
@@ -281,7 +310,6 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           computePFHFeatures(targetFiltered, target_normals, target_descriptors);
           findCoherentNeighbours<PFHSignature125>(source_descriptors, target_descriptors, coherentNeighboursSource, k);
           findCoherentNeighbours<PFHSignature125>(target_descriptors, source_descriptors, coherentNeighboursTarget, k);
-          refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
           break;
         case XYZRGBFEATURE:
           std::cout << "[CNNTransformStrategy::transform] Using xyzrgb points directly as features." << std::endl;
@@ -291,15 +319,18 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         case PERFECTFEATURE:
           std::cout << "[CNNTransformStrategy::transform] Using perfect point matching." << std::endl;
           std::cout << "  Warning: This can only be used with preconstructed sample faces." << std::endl;
-          findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursSource);
-          findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursTarget);
+          findPerfectCoherentNeighbours(sourceFiltered, targetFiltered, coherentNeighboursSource,k);
+          findPerfectCoherentNeighbours(targetFiltered, sourceFiltered, coherentNeighboursTarget,k);
           break;
         default:
           std::cout << "[CNNTransformStrategy::transform] Feature Format not set." << std::endl;
       }
-
+      float errorbefore=getMeanSquaredFaceError(coherentNeighboursSource);
+      std::cout<<"Face Error before refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
+      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
+      std::cout<<"Face Error before: "<<errorbefore<<" after refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
       return sourceFiltered;
     }
 };
