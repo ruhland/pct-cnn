@@ -30,11 +30,13 @@ void Demo::setTargetFile(const std::string& name){
 	pcl::io::loadPCDFile (name, *targetCloud);
 	DemoVisualizer::moveToCenter(targetCloud);
 	DemoVisualizer::scaleToXAxis(targetCloud,		1.0f);
+	//For Testing
+	//DemoVisualizer::rotateZAxis(targetCloud,90.0f);
 	visualizer.setTargetPC(targetCloud);
 }
 void Demo::setConfigFile(const std::string& file){
 	configuration->loadFromFile(file);
-	std::cout<<"Configuration read: nearestNeighbors: "<<configuration->getNearestNeighborsToSearch()<<std::endl;
+	std::cout<<"Configuration read: normalradius: "<<configuration->getFloat("normalradius")<<std::endl;
 }
 
 void Demo::setSourceFile(const std::string& output){

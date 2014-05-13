@@ -78,7 +78,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       void
       createNormals(typename PointCloud<PointT>::Ptr cloud,
           typename PointCloud<NormalT>::Ptr normals,
-          float normal_radius = 0.1)
+          float normal_radius = 0.04)
       {
         NormalEstimation<PointT, NormalT> nest;
 
@@ -125,7 +125,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       computePFHFeatures(PointCloud<PointXYZRGB>::Ptr &points,
           PointCloud<Normal>::Ptr &normals,
           PointCloud<PFHSignature125>::Ptr &descriptors,
-          float feature_radius = 0.08)
+          float feature_radius = 0.04)
       {
         PFHEstimation<PointXYZRGB, Normal, PFHSignature125> pfh_est;
 
@@ -246,7 +246,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
     void refineScores(
           vector<vector<PointWithScore>> &coherentNeighboursSource,
-          vector<vector<PointWithScore>> &coherentNeighboursTarget,int k)
+          vector<vector<PointWithScore>> &coherentNeighboursTarget,int k,bool deleteWithNoMatch)
       {
         for (int sourceIndex = 0; sourceIndex < coherentNeighboursSource.size(); sourceIndex++) {
           bool foundMatch=false;
@@ -264,7 +264,8 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
             }
           }
           if(!foundMatch){
-        	  coherentNeighboursSource[sourceIndex].clear();
+        	  if(deleteWithNoMatch)
+        		  coherentNeighboursSource[sourceIndex].clear();
         	  std::cout<<"found no match source: "<<sourceIndex<<std::endl;
           }
         }
@@ -304,10 +305,10 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       switch (configuration->getFeatureFormat()) {
         case PFHFEATURE:
           std::cout << "[CNNTransformStrategy::transform] Using PFH features." << std::endl;
-          createNormals<Normal>(targetFiltered, target_normals);
-          createNormals<Normal>(sourceFiltered, source_normals);
-          computePFHFeatures(sourceFiltered, source_normals, source_descriptors);
-          computePFHFeatures(targetFiltered, target_normals, target_descriptors);
+          createNormals<Normal>(targetFiltered, target_normals,configuration->getFloat("normalradius"));
+          createNormals<Normal>(sourceFiltered, source_normals,configuration->getFloat("normalradius"));
+          computePFHFeatures(sourceFiltered, source_normals, source_descriptors,configuration->getFloat("pfhradius"));
+          computePFHFeatures(targetFiltered, target_normals, target_descriptors,configuration->getFloat("pfhradius"));
           findCoherentNeighbours<PFHSignature125>(source_descriptors, target_descriptors, coherentNeighboursSource, k);
           findCoherentNeighbours<PFHSignature125>(target_descriptors, source_descriptors, coherentNeighboursTarget, k);
           break;
@@ -327,7 +328,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       }
       float errorbefore=getMeanSquaredFaceError(coherentNeighboursSource);
       std::cout<<"Face Error before refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
-      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
+      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k,configuration->getBool("markerrors"));
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
       std::cout<<"Face Error before: "<<errorbefore<<" after refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
