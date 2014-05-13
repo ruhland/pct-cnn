@@ -22,11 +22,24 @@ with the content
 ```
 blacklist gspca_kinect
 ```
-##### Installation on Ubuntu
+##### Installation on Ubuntu (14.04)
 This setup has been tested on a Ubuntu 14.04 AMD64 VM.
-* Install the pcl packages according to these instruction: http://pointclouds.org/downloads/linux.html
-* Install the package [libopencv-dev](http://packages.ubuntu.com/en/trusty/libopencv-dev).
-* We're using Boost program options. Install [libboost-program-options-dev](http://packages.ubuntu.com/en/trusty/libboost-program-options-dev)
+Unfortunately, the installation of the libpcl-all package according to the instructions on the PCL homepage resulted in unresolved problems. Our workaround was to compile the PCL sources ourself: https://github.com/PointCloudLibrary/pcl/archive/pcl-1.7.1.tar.gz
+* Install the packages:
+```
+cmake g++ git libboost-all-dev libflann-dev libeigen3-dev libopenni-dev  libusb-1.0 libvtk5-dev libvtk-java libvtk5-qt4-dev tcl-vtk libvtk-java python-vtk libqhull-dev libopencv-dev libopenni-sensor-primesense0
+```
+* Compile the sources with `mkdir build`, `cd build` and
+```
+cmake ../ \
+-DBUILD_visualization=ON \
+-DBUILD_app_cloud_composer=ON \
+-DBUILD_app_in_hand_scanner=ON \
+-DBUILD_app_modeler=ON \
+-DBUILD_app_point_cloud_editor=ON \
+```
+* The actual building takes some while and needs a lot of memory: `make -j 5` if more than 5 GB RAM available. `make` otherwise
+* Install with `make install`
 
 ##### Compling
 Our project currently consists of several small sample demos which can be used to test various PCL components.
