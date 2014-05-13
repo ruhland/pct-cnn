@@ -97,10 +97,11 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         cout << "[CNNTransformationStrategy::createNormals] Found "
           << normals->size()  << " normals" << endl;
 
-        for (Normal &normal : *normals) {
-          if (!pcl::isFinite<pcl::Normal>(normal)) {
-            cerr << "[CNNTransformStrategy::computePFHFeatures]"
-              << " Normal " << normal << " is not finite" << endl;
+        for (int i = 0; i < normals->size(); i++) {
+          if (!pcl::isFinite<pcl::Normal>((*normals)[i])) {
+            cerr << "[CNNTransformStrategy::createNormals]"
+              << " Normal " << i << " " << (*normals)[i] << " is not finite"
+              << endl;
           }
         }
       };
@@ -186,6 +187,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
             PointWithScore a(k_indices[y], 1/k_squared_distances[y]);
             coherent_neighbours[i].push_back(a);
           }
+          sort(coherent_neighbours[i].begin(), coherent_neighbours[i].end());
         }
       }
 
@@ -210,7 +212,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
     void replaceColors(PointCloud<PointXYZRGB>::Ptr &src,
         PointCloud<PointXYZRGB>::Ptr &target,
-        vector<vector<PointWithScore>> &coherentNeighbours)
+        vector<vector<PointWithScore>> &coherent_neighbors)
     {
       RGBValue red;
       red.Red=0xff;
@@ -219,15 +221,13 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       red.Green=0;
       for (int i = 0; i < src->size(); i++) {
         pcl::PointXYZRGB& ps = src->points[i];
-        if (i > coherentNeighbours.size()
-            || coherentNeighbours[i].size() == 0) {
-          std::cout << "Error Queue for point " << i
-            << " dos not exist \n";
-          ps.rgba =red.long_value;
+        if (i > coherent_neighbors.size()
+            || coherent_neighbors[i].size() == 0) {
+          ps.rgba = red.long_value;
           continue;
         }
-        std::sort(coherentNeighbours[i].begin(),coherentNeighbours[i].end());
-        int targetpoint = coherentNeighbours[i].back().index;
+        std::sort(coherent_neighbors[i].begin(), coherent_neighbors[i].end());
+        int targetpoint = coherent_neighbors[i].back().index;
         if (targetpoint < 0 || targetpoint >= target->size()) {
           std::cout << " ERROR targetpoint " << targetpoint
             << " out of range" << std::endl;
@@ -254,33 +254,40 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vector<vector<PointWithScore>> &coherentNeighboursSource,
         vector<vector<PointWithScore>> &coherentNeighboursTarget, int k,bool deleteWithNoMatch)
     {
+      int missing_matches = 0;
+
       // Step through the source cloud points.
       for (int source_index = 0; source_index < coherentNeighboursSource.size(); source_index++) {
         bool found_match = false;
-        std::sort(coherentNeighboursSource[source_index].begin(), coherentNeighboursSource[source_index].end());
+        sort(coherentNeighboursSource[source_index].begin(), coherentNeighboursSource[source_index].end());
         // Step through each neighbor (in the target cloud) of the current source point.
         for (int source_neighbor_index = 0; source_neighbor_index < coherentNeighboursSource[source_index].size(); source_neighbor_index++) {
           int target_index = coherentNeighboursSource[source_index][source_neighbor_index].index;
-          std::sort(coherentNeighboursTarget[target_index].begin(), coherentNeighboursTarget[target_index].end());
+          sort(coherentNeighboursTarget[target_index].begin(), coherentNeighboursTarget[target_index].end());
           // Step through each neighbor (in the source cloud) of the current target point.
           for (int target_neighbor_index = 0; target_neighbor_index < coherentNeighboursTarget[target_index].size(); target_neighbor_index++) {
             // Check whether the current source point appears in the neighbor list of the current target point.
             if (coherentNeighboursTarget[target_index][target_neighbor_index].index == source_index) {
-              std::cout << " redefine source: " << source_index << " (" << source_neighbor_index << ") target:" << target_index << " (" << target_neighbor_index << ") Score before:" << coherentNeighboursSource[source_index][source_neighbor_index].score;
+              // cout << " redefine source: " << source_index << " (" << source_neighbor_index << ") target:" << target_index << " (" << target_neighbor_index << ") Score before:" << coherentNeighboursSource[source_index][source_neighbor_index].score;
               // Refine the score of the current point in the target cloud.
               // Add the position in the neighbor list to the score. (Higher Position => higher score)
               coherentNeighboursSource[source_index][source_neighbor_index].score *= (target_neighbor_index+1);
-              std::cout << " after " << coherentNeighboursSource[source_index][source_neighbor_index].score << std::endl;
+              // cout << " after " << coherentNeighboursSource[source_index][source_neighbor_index].score << endl;
               found_match = true;
             }
           }
         }
         if(!found_match){
-			if(deleteWithNoMatch)
-          		coherentNeighboursSource[source_index].clear();
-          std::cout<<"found no match source: "<<source_index<<std::endl;
+          if(deleteWithNoMatch) {
+            coherentNeighboursSource[source_index].clear();
+          }
+          missing_matches++;
         }
       }
+
+      cout << "Found no matches for " << missing_matches << " points. ("
+        << (missing_matches * 100.0f) / coherentNeighboursSource.size()
+        << "%)" << endl;
     }
 
   public:
@@ -340,7 +347,6 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       }
       float errorbefore=getMeanSquaredFaceError(coherentNeighboursSource);
       refineScores(coherentNeighboursSource, coherentNeighboursTarget, k,configuration->getBool("markerrors"));
-      refineScores(coherentNeighboursTarget, coherentNeighboursSource, k,configuration->getBool("markerrors"));
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
       std::cout << "Face Error before: " << errorbefore << " after refine: "
