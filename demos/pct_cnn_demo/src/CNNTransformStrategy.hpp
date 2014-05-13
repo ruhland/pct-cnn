@@ -249,29 +249,29 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vector<vector<PointWithScore>> &coherentNeighboursTarget, int k)
     {
       // Step through the source cloud points.
-      for (int sourceIndex = 0; sourceIndex < coherentNeighboursSource.size(); sourceIndex++) {
-        bool foundMatch = false;
-        std::sort(coherentNeighboursSource[sourceIndex].begin(), coherentNeighboursSource[sourceIndex].end());
+      for (int source_index = 0; source_index < coherentNeighboursSource.size(); source_index++) {
+        bool found_match = false;
+        std::sort(coherentNeighboursSource[source_index].begin(), coherentNeighboursSource[source_index].end());
         // Step through each neighbor (in the target cloud) of the current source point.
-        for (int sourceNeighborIndex = 0; sourceNeighborIndex < coherentNeighboursSource[sourceIndex].size(); sourceNeighborIndex++) {
-          int targetIndex = coherentNeighboursSource[sourceIndex][sourceNeighborIndex].index;
-          std::sort(coherentNeighboursTarget[targetIndex].begin(), coherentNeighboursTarget[targetIndex].end());
+        for (int source_neighbor_index = 0; source_neighbor_index < coherentNeighboursSource[source_index].size(); source_neighbor_index++) {
+          int target_index = coherentNeighboursSource[source_index][source_neighbor_index].index;
+          std::sort(coherentNeighboursTarget[target_index].begin(), coherentNeighboursTarget[target_index].end());
           // Step through each neighbor (in the source cloud) of the current target point.
-          for (int targetNeighborIndex = 0; targetNeighborIndex < coherentNeighboursTarget[targetIndex].size(); targetNeighborIndex++) {
+          for (int target_neighbor_index = 0; target_neighbor_index < coherentNeighboursTarget[target_index].size(); target_neighbor_index++) {
             // Check whether the current source point appears in the neighbor list of the current target point.
-            if (coherentNeighboursTarget[targetIndex][targetNeighborIndex].index == sourceIndex) {
-              std::cout << " redefine source: " << sourceIndex << " (" << sourceNeighborIndex << ") target:" << targetIndex << " (" << targetNeighborIndex << ") Score before:" << coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score;
+            if (coherentNeighboursTarget[target_index][target_neighbor_index].index == source_index) {
+              std::cout << " redefine source: " << source_index << " (" << source_neighbor_index << ") target:" << target_index << " (" << target_neighbor_index << ") Score before:" << coherentNeighboursSource[source_index][source_neighbor_index].score;
               // Refine the score of the current point in the target cloud.
               // Add the position in the neighbor list to the score. (Higher Position => higher score)
-              coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score *= (targetNeighborIndex+1);
-              std::cout << " after " << coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score << std::endl;
-              foundMatch = true;
+              coherentNeighboursSource[source_index][source_neighbor_index].score *= (target_neighbor_index+1);
+              std::cout << " after " << coherentNeighboursSource[source_index][source_neighbor_index].score << std::endl;
+              found_match = true;
             }
           }
         }
-        if(!foundMatch){
-          coherentNeighboursSource[sourceIndex].clear();
-          std::cout<<"found no match source: "<<sourceIndex<<std::endl;
+        if(!found_match){
+          coherentNeighboursSource[source_index].clear();
+          std::cout<<"found no match source: "<<source_index<<std::endl;
         }
       }
     }
@@ -332,11 +332,12 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           std::cout << "[CNNTransformStrategy::transform] Feature Format not set." << std::endl;
       }
       float errorbefore=getMeanSquaredFaceError(coherentNeighboursSource);
-      std::cout<<"Face Error before refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
-      refineScores(coherentNeighboursSource,coherentNeighboursTarget,k);
+      refineScores(coherentNeighboursSource, coherentNeighboursTarget, k);
+      refineScores(coherentNeighboursTarget, coherentNeighboursSource, k);
       replaceColors(sourceFiltered, targetFiltered, coherentNeighboursSource);
 
-      std::cout<<"Face Error before: "<<errorbefore<<" after refine: "<<getMeanSquaredFaceError(coherentNeighboursSource)<<std::endl;
+      std::cout << "Face Error before: " << errorbefore << " after refine: "
+        << getMeanSquaredFaceError(coherentNeighboursSource) << std::endl;
       return sourceFiltered;
     }
 };
