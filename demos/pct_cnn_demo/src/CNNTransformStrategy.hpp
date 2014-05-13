@@ -2,6 +2,7 @@
 #define SNNTransformStrategy_HPP
 
 #include "TransformStrategy.hpp"
+
 #include <queue>
 #include <iostream>
 #include <string>
@@ -85,10 +86,23 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         cout << "[CNNTransformationStrategy::createNormals] Input cloud "
           << cloud->points.size() << " points" << endl;
 
+        cout << "[CNNTransformationStrategy::createNormals] Setting search "
+          << "radius: " << normal_radius << endl;
+
         nest.setInputCloud(cloud);
         nest.setSearchMethod(typename search::KdTree<PointT>::Ptr(new search::KdTree<PointT>));
         nest.setRadiusSearch(normal_radius);
         nest.compute(*normals);
+
+        cout << "[CNNTransformationStrategy::createNormals] Found "
+          << normals->size()  << " normals" << endl;
+
+        for (Normal &normal : *normals) {
+          if (!pcl::isFinite<pcl::Normal>(normal)) {
+            cerr << "[CNNTransformStrategy::computePFHFeatures]"
+              << " Normal " << normal << " is not finite" << endl;
+          }
+        }
       };
 
     void
@@ -96,8 +110,8 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           typename PointCloud<PointT>::Ptr cloud_filtered,
           float leaf_size = 0.01f)
       {
-        cout << "[CNNTransformationStrategy::filter] Input cloud:" << endl
-          << "    " << cloud->points.size() << " points" << endl;
+        cout << "[CNNTransformationStrategy::filter] Input cloud: "
+          << cloud->points.size() << " points" << endl;
 
         typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
 
@@ -106,8 +120,8 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vox_grid.setSaveLeafLayout(true);
         vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
 
-        cout << "[CNNTransformationStrategy::filter] Creating a voxel grid:"
-          << endl << "    leaf size: [" << leaf_size << ", " << leaf_size
+        cout << "[CNNTransformationStrategy::filter] Creating a voxel grid. "
+          << "Leaf size: [" << leaf_size << ", " << leaf_size
           << ", " << leaf_size << "]" << endl;
 
         // Skip the rest...
@@ -115,8 +129,8 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         vox_grid.filter(*cloud_filtered);
 
         cout << "[CNNTransformationStrategy::filter] Result of voxel grid"
-          << " filtering:" << endl << "    "
-          << cloud_filtered->points.size() << " points remaining" << endl;
+          << " filtering:" << cloud_filtered->points.size()
+          << " points remaining" << endl;
 
         return;
       };
@@ -135,19 +149,11 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         pfh_est.setInputCloud(points);
         pfh_est.setInputNormals(normals);
 
-        cout << "[CNNTransformStrategy::computePFHFeatures]" << endl;
-        cout << "  setting input cloud: " << points->size() << " points"
+        cout << "[CNNTransformStrategy::computePFHFeatures]"
+          << " Setting input cloud: " << points->size() << " points" << endl;
+        cout << "[CNNTransformStrategy::computePFHFeatures]"
+          << " Setting input normals: " << normals->size() << " normals"
           << endl;
-        cout << "  setting input normals: " << normals->size() << " normals"
-          << endl;
-
-        for (int i = 0; i < normals->points.size(); i++) {
-          if (!pcl::isFinite<pcl::Normal>(normals->points[i])) {
-            cerr << "normal " << i << " is not finite\n";
-            // normals->points[i]=new pcl::Normal();
-          }
-        }
-
         pfh_est.compute(*descriptors);
       };
 
