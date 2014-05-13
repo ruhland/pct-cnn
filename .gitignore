@@ -12,4 +12,7 @@
 # Demo Project config file
 **/config.txt
 
+# GEdit swap files
+**/*~
+
 faces
