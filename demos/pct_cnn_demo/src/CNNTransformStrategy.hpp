@@ -27,16 +27,16 @@
 #include <opencv/cv.h>
 
 namespace pcl {
-typedef union {
-	struct {
-		unsigned char Blue;
-		unsigned char Green;
-		unsigned char Red;
-		unsigned char Alpha;
-	};
-	float float_value;
-	uint32_t long_value;
-} RGBValue;
+  typedef union {
+    struct {
+      unsigned char Blue;
+      unsigned char Green;
+      unsigned char Red;
+      unsigned char Alpha;
+    };
+    float float_value;
+    uint32_t long_value;
+  } RGBValue;
 }
 
 template<typename PointT>
@@ -206,11 +206,11 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         PointCloud<PointXYZRGB>::Ptr &target,
         vector<vector<PointWithScore>> &coherentNeighbours)
     {
-    	RGBValue red;
-    	red.Red=0xff;
-    	red.Alpha=0;
-    	red.Blue=0;
-    	red.Green=0;
+      RGBValue red;
+      red.Red=0xff;
+      red.Alpha=0;
+      red.Blue=0;
+      red.Green=0;
       for (int i = 0; i < src->size(); i++) {
         pcl::PointXYZRGB& ps = src->points[i];
         if (i > coherentNeighbours.size()
@@ -234,41 +234,47 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
     }
 
     float getMeanSquaredFaceError(vector<vector<PointWithScore>> &coherentNeighbors){
-    	float error=0;
-    	for(int s=0;s<coherentNeighbors.size();s++){
-    		if(coherentNeighbors[s].size()==0)
-    			continue;
-    		int t = coherentNeighbors[s].back().index;
-    		error+=(s-t)*(s-t);
-    	}
-    	return error;
+      float error=0;
+      for(int s=0;s<coherentNeighbors.size();s++){
+        if(coherentNeighbors[s].size()==0)
+          continue;
+        int t = coherentNeighbors[s].back().index;
+        error+=(s-t)*(s-t);
+      }
+      return error;
     }
 
     void refineScores(
-          vector<vector<PointWithScore>> &coherentNeighboursSource,
-          vector<vector<PointWithScore>> &coherentNeighboursTarget,int k)
-      {
-        for (int sourceIndex = 0; sourceIndex < coherentNeighboursSource.size(); sourceIndex++) {
-          bool foundMatch=false;
-          std::sort(coherentNeighboursSource[sourceIndex].begin(), coherentNeighboursSource[sourceIndex].end());
-          for (int sourceNeighborIndex = 0; sourceNeighborIndex < coherentNeighboursSource[sourceIndex].size(); sourceNeighborIndex++) {
-            int targetIndex = coherentNeighboursSource[sourceIndex][sourceNeighborIndex].index;
-            std::sort(coherentNeighboursTarget[targetIndex].begin(), coherentNeighboursTarget[targetIndex].end());
-            for (int targetNeighborIndex = 0; targetNeighborIndex < coherentNeighboursTarget[targetIndex].size(); targetNeighborIndex++) {
-              if (coherentNeighboursTarget[targetIndex][targetNeighborIndex].index == sourceIndex) {
-                std::cout<<" redefine source: "<<sourceIndex<<" ("<<sourceNeighborIndex<<") target:"<<targetIndex <<" ("<<targetNeighborIndex<<") Score before:"<<coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score;
-                coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score*=(targetNeighborIndex+1);
-                std::cout<<" after "<<coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score<<std::endl;
-                foundMatch=true;
-              }
+        vector<vector<PointWithScore>> &coherentNeighboursSource,
+        vector<vector<PointWithScore>> &coherentNeighboursTarget, int k)
+    {
+      // Step through the source cloud points.
+      for (int sourceIndex = 0; sourceIndex < coherentNeighboursSource.size(); sourceIndex++) {
+        bool foundMatch = false;
+        std::sort(coherentNeighboursSource[sourceIndex].begin(), coherentNeighboursSource[sourceIndex].end());
+        // Step through each neighbor (in the target cloud) of the current source point.
+        for (int sourceNeighborIndex = 0; sourceNeighborIndex < coherentNeighboursSource[sourceIndex].size(); sourceNeighborIndex++) {
+          int targetIndex = coherentNeighboursSource[sourceIndex][sourceNeighborIndex].index;
+          std::sort(coherentNeighboursTarget[targetIndex].begin(), coherentNeighboursTarget[targetIndex].end());
+          // Step through each neighbor (in the source cloud) of the current target point.
+          for (int targetNeighborIndex = 0; targetNeighborIndex < coherentNeighboursTarget[targetIndex].size(); targetNeighborIndex++) {
+            // Check whether the current source point appears in the neighbor list of the current target point.
+            if (coherentNeighboursTarget[targetIndex][targetNeighborIndex].index == sourceIndex) {
+              std::cout << " redefine source: " << sourceIndex << " (" << sourceNeighborIndex << ") target:" << targetIndex << " (" << targetNeighborIndex << ") Score before:" << coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score;
+              // Refine the score of the current point in the target cloud.
+              // Add the position in the neighbor list to the score. (Higher Position => higher score)
+              coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score *= (targetNeighborIndex+1);
+              std::cout << " after " << coherentNeighboursSource[sourceIndex][sourceNeighborIndex].score << std::endl;
+              foundMatch = true;
             }
           }
-          if(!foundMatch){
-        	  coherentNeighboursSource[sourceIndex].clear();
-        	  std::cout<<"found no match source: "<<sourceIndex<<std::endl;
-          }
+        }
+        if(!foundMatch){
+          coherentNeighboursSource[sourceIndex].clear();
+          std::cout<<"found no match source: "<<sourceIndex<<std::endl;
         }
       }
+    }
 
   public:
     typename PointCloud<PointT>::Ptr transform(
