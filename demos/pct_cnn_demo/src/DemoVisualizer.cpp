@@ -1,6 +1,16 @@
 // disable warnings for deprecated code from pcl headers (fopen, etc.)
+#ifdef _MSC_VER
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
+// also disable specific warnings from MSVC Compiler on Windows
+#pragma warning(disable: 4305 4514 4711 4996)
+#pragma warning(push, 1)
+#if _MSC_VER > 1600
+#define _MSC_VER_BAK _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER 1600
+#endif
 #endif
 
 #include "DemoVisualizer.hpp"
@@ -8,6 +18,15 @@
 #include <vector>
 #include <pcl/visualization/common/common.h>
 #include <pcl/common/impl/common.hpp>
+
+// re-enable everything for Windows
+#ifdef _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER _MSC_VER_BAK
+#undef _MSC_VER_BAK
+#pragma warning(pop)
+#endif
+
 
 void DemoVisualizer::keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event) {
 	if (event.getKeySym() == "space" && event.keyDown())
@@ -118,8 +137,10 @@ void DemoVisualizer::show() {
 	viewer.setPointCloudRenderingProperties(
 				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
 	viewer.setCameraPosition(0, 0, 9, 0, 1, 0, 0);
+#if PCL_MINOR_VERSION > 6
 	viewer.setCameraClipDistances(0.01f, 1.0e10);
 	viewer.setSize(1280, 1024); // Visualiser window size
+#endif
 }
 
 void DemoVisualizer::close() {

@@ -1,8 +1,31 @@
+// disable warnings for deprecated code from pcl headers (fopen, etc.)
+#ifdef _MSC_VER
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+// also disable specific warnings from MSVC Compiler on Windows
+#pragma warning(disable: 4305 4514 4711 4996)
+#pragma warning(push, 1)
+#if _MSC_VER > 1600
+#define _MSC_VER_BAK _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER 1600
+#endif
+#endif
+
 #include "Configuration.hpp"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
+
+// re-enable warnings for Windows
+#ifdef _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER _MSC_VER_BAK
+#undef _MSC_VER_BAK
+#pragma warning(pop)
+#endif
 
 Configuration::Configuration() {
 	setDefaultConfigurations();
@@ -55,14 +78,14 @@ void Configuration::assignProperty(const std::string& property,
 	} else if (property.compare("nearestneighborstosearch") == 0) {
 		try {
 			nearestNeighborsToSearch = std::stoi(value);
-		} catch (const std::invalid_argument& e) {
+		} catch (const std::invalid_argument&) {
 			std::cerr << "Wrong Argument " << value << std::endl;
 		}
 
 	} else if (property.compare("filterleafsize") == 0) {
 		try {
 			filterLeafSize = std::stof(value);
-		} catch (const std::invalid_argument& e) {
+		} catch (const std::invalid_argument&) {
 			std::cerr << "Wrong Argument " << value << std::endl;
 		}
 	} else {
@@ -87,8 +110,8 @@ float Configuration::getFloat(const std::string& p) {
 	float ret = 0;
 	try {
 		ret = std::stof(map[p]);
-	} catch (const std::invalid_argument& e) {
-		ret = nan("");
+	} catch (const std::invalid_argument&) {
+		ret = static_cast<float>(nan(""));
 	}
 	return ret;
 }
@@ -97,7 +120,7 @@ int Configuration::getInt(const std::string& p) {
 	int ret = 0;
 	try {
 		ret = std::stoi(map[p]);
-	} catch (const std::invalid_argument& e) {
+	} catch (const std::invalid_argument&) {
 		ret = -1;
 	}
 	return ret;

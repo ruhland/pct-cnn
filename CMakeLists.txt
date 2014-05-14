@@ -14,7 +14,9 @@ project(PCT-CNN)
 set(CMAKE_BUILD_TYPE Debug)
 
 # Enable C++ 11 support.
-add_definitions(-std=c++11)
+if(NOT MSVC)
+    add_definitions(-std=c++11)
+endif()
 
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 message(STATUS "CMAKE_SYSTEM: ${CMAKE_SYSTEM}")
@@ -90,7 +92,7 @@ set(PCL_COMPONENTS
     visualization
     )
 
-find_package(PCL 1.7 REQUIRED ${PCL_COMPONENTS})
+find_package(PCL 1.6 REQUIRED ${PCL_COMPONENTS})
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIR})
