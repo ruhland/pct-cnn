@@ -4,8 +4,13 @@
 	#define _CRT_SECURE_NO_WARNINGS
 	#endif
 // also disable specific warnings from MSVC Compiler on Windows
-#pragma warning(disable: 4514 4711 4996)
+#pragma warning(disable: 4305 4514 4711 4996)
 #pragma warning(push, 1)
+#if _MSC_VER > 1600
+#define _MSC_VER_BAK _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER 1600
+#endif
 #endif
 
 #include <boost/program_options.hpp>
@@ -15,8 +20,12 @@
 #include <thread>
 #include "Demo.hpp"
 #include "CNNTransformStrategy.hpp"
-// re-enable warnings for Windows
+
+// re-enable everything for Windows
 #ifdef _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER _MSC_VER_BAK
+#undef _MSC_VER_BAK
 #pragma warning(pop)
 #endif
 
@@ -31,7 +40,7 @@ void Demo::setTargetFile(const std::string& name){
 	DemoVisualizer::moveToCenter(targetCloud);
 	DemoVisualizer::scaleToXAxis(targetCloud,		1.0f);
 	//For Testing
-	//DemoVisualizer::rotateZAxis(targetCloud,90.0f);
+	DemoVisualizer::rotateXYZ(targetCloud,configuration->getFloat("targetrotatex",0.0f),configuration->getFloat("targetrotatey",0.0f),configuration->getFloat("targetrotatez",0.0f));
 	visualizer.setTargetPC(targetCloud);
 }
 void Demo::setConfigFile(const std::string& file){
@@ -94,13 +103,13 @@ int main (int argc, char **argv)
     boost::program_options::notify(vm);    
     
     Demo demo;
+    if(vm.count("f")) // Must be called before calling other setter
+    	demo.setConfigFile(vm["f"].as<std::string>());
     if(vm.count("k"))
         demo.enableKinect();
     demo.setTargetFile(vm["t"].as<std::string>());
     if(vm.count("s"))
         demo.setSourceFile(vm["s"].as<std::string>());
-    if(vm.count("f"))
-    	demo.setConfigFile(vm["f"].as<std::string>());
     demo.run();
     std::cout<<"Program exit\n";
     }
