@@ -17,7 +17,7 @@ public:
 	float getFilterLeafSize();
 	std::string get(const std::string&);
 	int getInt(const std::string& p,int defaultvalue=0);
-	float getFloat(const std::string&, float defaultvalue=nan(""));
+	float getFloat(const std::string&, float defaultvalue=static_cast<float>(nan("")));
 	bool getBool(const std::string &);
 private:
 	FILTERMETHOD filter;

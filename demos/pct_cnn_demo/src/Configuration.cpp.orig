@@ -110,8 +110,13 @@ float Configuration::getFloat(const std::string& p,float defaultvalue) {
 	float ret = defaultvalue;
 	try {
 		ret = std::stof(map[p]);
+<<<<<<< HEAD
 	} catch (const std::invalid_argument& e) {
 		ret = defaultvalue;
+=======
+	} catch (const std::invalid_argument&) {
+		ret = static_cast<float>(nan(""));
+>>>>>>> 706057a55e0f3b0739d63d852e2c3e91e92bf445
 	}
 	return ret;
 }
@@ -120,8 +125,13 @@ int Configuration::getInt(const std::string& p,int defaultvalue) {
 	int ret = defaultvalue;
 	try {
 		ret = std::stoi(map[p]);
+<<<<<<< HEAD
 	} catch (const std::invalid_argument& e) {
 		ret = defaultvalue;
+=======
+	} catch (const std::invalid_argument&) {
+		ret = -1;
+>>>>>>> 706057a55e0f3b0739d63d852e2c3e91e92bf445
 	}
 	return ret;
 }

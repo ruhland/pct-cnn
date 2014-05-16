@@ -1,5 +1,20 @@
 /* \author Geoffrey Biggs */
 
+// disable warnings for deprecated code from pcl headers (fopen, etc.)
+#ifdef _MSC_VER
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+// also disable specific warnings from MSVC Compiler on Windows
+#pragma warning(disable: 4305 4514 4711 4996)
+#pragma warning(push, 1)
+#if _MSC_VER > 1600
+#define _MSC_VER_BAK _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER 1600
+#endif
+#endif
+
 #include <iostream>
 
 #include <boost/thread/thread.hpp>
@@ -8,6 +23,14 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
+
+// re-enable everything for Windows
+#ifdef _MSC_VER
+#undef _MSC_VER
+#define _MSC_VER _MSC_VER_BAK
+#undef _MSC_VER_BAK
+#pragma warning(pop)
+#endif
 
 // --------------
 // -----Help-----
@@ -297,7 +320,7 @@ main (int argc, char** argv)
     for (float angle(0.0); angle <= 360.0; angle += 5.0)
     {
       pcl::PointXYZ basic_point;
-      basic_point.x = 0.5 * cosf (pcl::deg2rad(angle));
+      basic_point.x = 0.5f * cosf (pcl::deg2rad(angle));
       basic_point.y = sinf (pcl::deg2rad(angle));
       basic_point.z = z;
       basic_cloud_ptr->points.push_back(basic_point);
