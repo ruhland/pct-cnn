@@ -48,6 +48,8 @@ void Configuration::assignProperty(const std::string& property,
 			featureFormat = PERFECTFEATURE;
 		else if (value.compare("PFHFEATURE") == 0)
 			featureFormat = PFHFEATURE;
+                else if (value.compare("RIFTFEATURE") == 0)
+                        featureFormat = RIFTFEATURE;
 		else if (value.compare("XYZRGBFEATURE") == 0)
 			featureFormat = XYZRGBFEATURE;
 		else
