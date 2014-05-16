@@ -9,7 +9,8 @@
 #include <pcl/visualization/common/common.h>
 #include <pcl/common/impl/common.hpp>
 
-void DemoVisualizer::keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event) {
+void DemoVisualizer::keyboardEventOccurred(
+		const pcl::visualization::KeyboardEvent& event) {
 	if (event.getKeySym() == "space" && event.keyDown())
 		requestedTransformations++;
 	if (event.getKeyCode() == 'l')
@@ -21,16 +22,15 @@ std::string const DemoVisualizer::pcTarget = "TargetPointCloud";
 std::string const DemoVisualizer::pcTransformed = "TransformedPointCloud";
 
 DemoVisualizer::DemoVisualizer() :
-		vp1(1), vp2(2), vp3(3), sourceLocked(false), requestedTransformations(0),
-		viewer("ICP demo"), cloud_transformed(
+		vp1(1), vp2(2), vp3(3), sourceLocked(false), requestedTransformations(
+				0), viewer("ICP demo"), cloud_transformed(
 				new pcl::PointCloud<pcl::PointXYZRGB>), icp() {
 	viewer.createViewPort(0.0, 0.0, 0.33, 1.0, vp1);
 	viewer.createViewPort(0.33, 0.0, 0.66, 1.0, vp2);
 	viewer.createViewPort(0.66, 0.0, 1.0, 1.0, vp3);
-        viewer.addCoordinateSystem();
-	boost::function<
-				void(const pcl::visualization::KeyboardEvent& event)> i = boost::bind(
-				&DemoVisualizer::keyboardEventOccurred, this, _1);
+	viewer.addCoordinateSystem();
+	boost::function<void(const pcl::visualization::KeyboardEvent& event)> i =
+			boost::bind(&DemoVisualizer::keyboardEventOccurred, this, _1);
 
 	viewer.registerKeyboardCallback(i);
 }
@@ -48,7 +48,7 @@ void DemoVisualizer::setSourcePC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
 	viewer.removePointCloud(pcSource);
 	viewer.addPointCloud(cloud_source, pcSource, vp1);
 	viewer.setPointCloudRenderingProperties(
-				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
 }
 
 void DemoVisualizer::scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
@@ -59,7 +59,7 @@ void DemoVisualizer::scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 	pcl::PointXYZRGB max;
 	pcl::getMinMax3D<pcl::PointXYZRGB>(*pc, min, max);
 	std::cout << " scaleToXAxis before " << min << " max " << max << std::endl;
-	float scale = maxScale / (max.x-min.x);
+	float scale = maxScale / (max.x - min.x);
 	transformation_matrix(0, 0) = scale;
 	transformation_matrix(1, 1) = scale;
 	transformation_matrix(2, 2) = scale;
@@ -68,17 +68,33 @@ void DemoVisualizer::scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 	std::cout << " scaleToXAxis after " << min << " max " << max << std::endl;
 }
 
-void DemoVisualizer::rotateZAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
-		float degrees) {
-	Eigen::Matrix4f transformation_matrix = Eigen::Matrix4f::Identity();
-
+void DemoVisualizer::rotateXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
+		float xdegrees,float ydegrees,float zdegrees){
+	Eigen::Matrix4f transformation_matrix_z = Eigen::Matrix4f::Identity();
+	Eigen::Matrix4f transformation_matrix_x = Eigen::Matrix4f::Identity();
+	Eigen::Matrix4f transformation_matrix_y = Eigen::Matrix4f::Identity();
 // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-	float theta = degrees * static_cast<float>(M_PI) / 180.0f; // The angle of rotation in radians
-	transformation_matrix(0, 0) = cos(theta);
-	transformation_matrix(0, 1) = -sin(theta);
-	transformation_matrix(1, 0) = sin(theta);
-	transformation_matrix(1, 1) = cos(theta);
-	pcl::transformPointCloud(*pc, *pc, transformation_matrix);
+	float theta = zdegrees * static_cast<float>(M_PI) / 180.0f; // The angle of rotation in radians
+	transformation_matrix_z(0, 0) = cos(theta);
+	transformation_matrix_z(0, 1) = -sin(theta);
+	transformation_matrix_z(1, 0) = sin(theta);
+	transformation_matrix_z(1, 1) = cos(theta);
+
+	theta = xdegrees * static_cast<float>(M_PI) / 180.0f; // The angle of rotation in radians
+	transformation_matrix_x(1, 1) = cos(theta);
+	transformation_matrix_x(1, 2) = -sin(theta);
+	transformation_matrix_x(2, 1) = sin(theta);
+	transformation_matrix_x(2, 2) = cos(theta);
+
+	theta = ydegrees * static_cast<float>(M_PI) / 180.0f; // The angle of rotation in radians
+	transformation_matrix_y(0, 0) = cos(theta);
+	transformation_matrix_y(2, 0) = -sin(theta);
+	transformation_matrix_y(0, 2) = sin(theta);
+	transformation_matrix_y(2, 2) = cos(theta);
+
+	Eigen::Matrix4f transformation=transformation_matrix_z*transformation_matrix_x*transformation_matrix_y;
+
+	pcl::transformPointCloud(*pc, *pc, transformation);
 }
 void DemoVisualizer::moveToCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc) {
 
@@ -108,7 +124,7 @@ void DemoVisualizer::setTransformedPC(
 	viewer.removePointCloud(pcTransformed);
 	viewer.addPointCloud(arg, pcTransformed, vp3);
 	viewer.setPointCloudRenderingProperties(
-				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTransformed);
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTransformed);
 }
 
 void DemoVisualizer::show() {
@@ -116,7 +132,7 @@ void DemoVisualizer::show() {
 	viewer.setPointCloudRenderingProperties(
 			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcTarget);
 	viewer.setPointCloudRenderingProperties(
-				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
 	viewer.setCameraPosition(0, 0, 9, 0, 1, 0, 0);
 	viewer.setCameraClipDistances(0.01f, 1.0e10);
 	viewer.setSize(1280, 1024); // Visualiser window size

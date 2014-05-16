@@ -83,22 +83,22 @@ std::string Configuration::trim(const std::string& string) {
 std::string Configuration::get(const std::string& p) {
 	return map[p];
 }
-float Configuration::getFloat(const std::string& p) {
-	float ret = 0;
+float Configuration::getFloat(const std::string& p,float defaultvalue) {
+	float ret = defaultvalue;
 	try {
 		ret = std::stof(map[p]);
 	} catch (const std::invalid_argument& e) {
-		ret = nan("");
+		ret = defaultvalue;
 	}
 	return ret;
 }
 
-int Configuration::getInt(const std::string& p) {
-	int ret = 0;
+int Configuration::getInt(const std::string& p,int defaultvalue) {
+	int ret = defaultvalue;
 	try {
 		ret = std::stoi(map[p]);
 	} catch (const std::invalid_argument& e) {
-		ret = -1;
+		ret = defaultvalue;
 	}
 	return ret;
 }
