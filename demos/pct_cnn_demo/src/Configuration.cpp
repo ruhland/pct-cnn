@@ -4,13 +4,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 // also disable specific warnings from MSVC Compiler on Windows
-#pragma warning(disable: 4305 4514 4711 4996)
+#pragma warning(disable: 4503 4305 4514 4711 4996)
 #pragma warning(push, 1)
-#if _MSC_VER > 1600
-#define _MSC_VER_BAK _MSC_VER
-#undef _MSC_VER
-#define _MSC_VER 1600
-#endif
 #endif
 
 #include "Configuration.hpp"
@@ -21,9 +16,6 @@
 
 // re-enable warnings for Windows
 #ifdef _MSC_VER
-#undef _MSC_VER
-#define _MSC_VER _MSC_VER_BAK
-#undef _MSC_VER_BAK
 #pragma warning(pop)
 #endif
 

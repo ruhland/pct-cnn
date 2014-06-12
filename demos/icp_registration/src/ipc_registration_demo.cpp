@@ -4,13 +4,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 // also disable specific warnings from MSVC Compiler on Windows
-#pragma warning(disable: 4305 4514 4711 4996)
+#pragma warning(disable: 4503 4305 4514 4711 4996)
 #pragma warning(push, 1)
-#if _MSC_VER > 1600
-#define _MSC_VER_BAK _MSC_VER
-#undef _MSC_VER
-#define _MSC_VER 1600
-#endif
 #endif
 
 #include <iostream>
@@ -22,15 +17,13 @@
 
 // re-enable everything for Windows
 #ifdef _MSC_VER
-#undef _MSC_VER
-#define _MSC_VER _MSC_VER_BAK
 #pragma warning(pop)
 #endif
 
 using namespace pcl;
 
 int main(int argc, char **argv) {
-    PLYReader ply_reader;
+    PCDReader ply_reader;
     PCDWriter pcd_writer;
 
     PointCloud<PointXYZRGB>::Ptr source_pointer (new PointCloud<PointXYZRGB>);
@@ -45,6 +38,7 @@ int main(int argc, char **argv) {
     ply_reader.read(target_filename, *target_pointer);
 
     IterativeClosestPoint<PointXYZRGB, PointXYZRGB> icp;
+
 
 #if PCL_MINOR_VERSION > 6
 	icp.setInputSource(source_pointer);
