@@ -2,8 +2,9 @@
 #define CONFIGURATION_HPP
 #include <string>
 #include <map>
+#include <algorithm>
 enum FILTERMETHOD {NOFILTER,VOXELGRIDFILTER};
-enum FEATUREFORMAT {PERFECTFEATURE,XYZRGBFEATURE,PFHFEATURE};
+enum FEATUREFORMAT {PERFECTFEATURE, XYZRGBFEATURE, PFHFEATURE, RIFTFEATURE};
 
 class Configuration{
 public:
@@ -15,8 +16,8 @@ public:
 	FEATUREFORMAT getFeatureFormat();
 	float getFilterLeafSize();
 	std::string get(const std::string&);
-	int getInt(const std::string&);
-	float getFloat(const std::string&);
+	int getInt(const std::string& p,int defaultvalue=0);
+	float getFloat(const std::string&, float defaultvalue=static_cast<float>(nan("")));
 	bool getBool(const std::string &);
 private:
 	FILTERMETHOD filter;

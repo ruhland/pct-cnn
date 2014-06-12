@@ -32,7 +32,7 @@ void Demo::setTargetFile(const std::string& name){
 	DemoVisualizer::moveToCenter(targetCloud);
 	DemoVisualizer::scaleToXAxis(targetCloud,		1.0f);
 	//For Testing
-	//DemoVisualizer::rotateZAxis(targetCloud,90.0f);
+	DemoVisualizer::rotateXYZ(targetCloud,configuration->getFloat("targetrotatex",0.0f),configuration->getFloat("targetrotatey",0.0f),configuration->getFloat("targetrotatez",0.0f));
 	visualizer.setTargetPC(targetCloud);
 }
 void Demo::setConfigFile(const std::string& file){
@@ -95,13 +95,13 @@ int main (int argc, char **argv)
     boost::program_options::notify(vm);    
     
     Demo demo;
+    if(vm.count("f")) // Must be called before calling other setter
+    	demo.setConfigFile(vm["f"].as<std::string>());
     if(vm.count("k"))
         demo.enableKinect();
     demo.setTargetFile(vm["t"].as<std::string>());
     if(vm.count("s"))
         demo.setSourceFile(vm["s"].as<std::string>());
-    if(vm.count("f"))
-    	demo.setConfigFile(vm["f"].as<std::string>());
     demo.run();
     std::cout<<"Program exit\n";
     }
