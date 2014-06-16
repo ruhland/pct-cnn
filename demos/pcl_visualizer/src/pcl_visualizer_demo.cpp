@@ -295,7 +295,6 @@ main (int argc, char** argv)
   else
   {
     printUsage (argv[0]);
-	std::cin.get();
     return 0;
   }
 

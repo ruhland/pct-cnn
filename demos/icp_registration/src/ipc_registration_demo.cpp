@@ -23,7 +23,7 @@
 using namespace pcl;
 
 int main(int argc, char **argv) {
-    PCDReader ply_reader;
+    PLYReader ply_reader;
     PCDWriter pcd_writer;
 
     PointCloud<PointXYZRGB>::Ptr source_pointer (new PointCloud<PointXYZRGB>);
