@@ -84,6 +84,10 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         bool operator<(const PointWithScore &rp) const {
           return score < rp.score;
         }
+
+        bool operator== (const PointWithScore &rp) const {
+          return index == rp.index && score == rp.score;
+        }
     };
 
     /** \brief Calculate normals for every point in the given cloud.
@@ -98,7 +102,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       {
         NormalEstimation<PointT, NormalT> nest;
 
-        cout << "[CNNTransformationStrategy::createNormals] Input cloud "
+        cout << "[" << __func__ << "] Input cloud "
           << cloud->points.size() << " points" << endl;
 
         cout << "[CNNTransformationStrategy::createNormals] Setting search "
@@ -195,9 +199,9 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       return;
     };
 
-    void computePFHFeatures(PointCloud<PointXYZRGB>::Ptr &points,
-        PointCloud<Normal>::Ptr &normals,
-        PointCloud<PFHSignature125>::Ptr &descriptors,
+    void computePFHFeatures(PointCloud<PointXYZRGB>::Ptr const &points,
+        PointCloud<Normal>::Ptr const &normals,
+        PointCloud<PFHSignature125>::Ptr const &descriptors,
         float feature_radius = 0.08)
     {
       PFHEstimation<PointXYZRGB, Normal, PFHSignature125> pfh_est;
@@ -379,54 +383,47 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       return error;
     }
 
-    float refineScores(vector<vector<PointWithScore>> &coherentNeighboursSource,
-        vector<vector<PointWithScore>> &coherentNeighboursTarget, int k,
-        bool deleteWithNoMatch) {
+    float refineScores(vector<vector<PointWithScore>> &source_neighbours,
+        vector<vector<PointWithScore>> &target_neighbours, int k,
+        bool delete_with_no_match=false) {
       int missing_matches = 0;
 
-      // Step through the source cloud points.
-      for (int source_index = 0;
-          source_index < coherentNeighboursSource.size();
-          source_index++) {
+      // Step through the vectors of nearest neighbours (in the target cloud)
+      // of every source cloud point.
+      for (auto &s_neighbours : source_neighbours) {
         bool found_match = false;
-        sort(coherentNeighboursSource[source_index].begin(),
-            coherentNeighboursSource[source_index].end());
-        // Step through each neighbor (in the target cloud) of the current source point.
-        for (int source_neighbor_index = 0;
-            source_neighbor_index
-            < coherentNeighboursSource[source_index].size();
-            source_neighbor_index++) {
-          int target_index =
-            coherentNeighboursSource[source_index][source_neighbor_index].index;
-          sort(coherentNeighboursTarget[target_index].begin(),
-              coherentNeighboursTarget[target_index].end());
-          // Step through each neighbor (in the source cloud) of the current target point.
-          for (int target_neighbor_index = 0;
-              target_neighbor_index
-              < coherentNeighboursTarget[target_index].size();
-              target_neighbor_index++) {
-            // Check whether the current source point appears in the neighbor list of the current target point.
-            if (coherentNeighboursTarget[target_index][target_neighbor_index].index
-                == source_index) {
-              // cout << " redefine source: " << source_index << " (" << source_neighbor_index << ") target:" << target_index << " (" << target_neighbor_index << ") Score before:" << coherentNeighboursSource[source_index][source_neighbor_index].score;
+        // Sort the nearest neighbours according to their score.
+        sort(s_neighbours.begin(), s_neighbours.end());
+        // Step through each target cloud point in the vector of nearest
+        // neighbours.
+        for (auto &s_neighbour : s_neighbours) {
+          auto &t_neighbours = target_neighbours[s_neighbour.index];
+          sort(t_neighbours.begin(), t_neighbours.end());
+          // Step through each neighbour point (in the source cloud)
+          // of the current target point.
+          for (auto &t_neighbour : t_neighbours) {
+            // Check whether the current source point appears in the neighbor
+            // list of the current target point.
+            auto &source_ref = source_neighbours[t_neighbour.index];
+            if (source_ref == s_neighbours) {
               // Refine the score of the current point in the target cloud.
-              // Add the position in the neighbor list to the score. (Higher Position => higher score)
-              coherentNeighboursSource[source_index][source_neighbor_index].score *=
-                (target_neighbor_index + 1);
-              // cout << " after " << coherentNeighboursSource[source_index][source_neighbor_index].score << endl;
+              // Add the position in the neighbor list to the score.
+              // (Higher Position => higher score)
+              int pos = find(t_neighbours.begin(), t_neighbours.end(), t_neighbour) - t_neighbours.begin();
+              s_neighbour.score *= (pos + 1);
               found_match = true;
             }
           }
         }
         if (!found_match) {
-          if (deleteWithNoMatch) {
-            coherentNeighboursSource[source_index].clear();
+          if (delete_with_no_match) {
+            s_neighbours.clear();
           }
           missing_matches++;
         }
       }
       float missingmatches = (missing_matches * 100.0f)
-        / coherentNeighboursSource.size();
+        / source_neighbours.size();
       cout << "Found no matches for " << missing_matches << " points. ("
         << missingmatches << "%)" << endl;
       return missingmatches;
