@@ -60,6 +60,7 @@ void Demo::run(){
 		if(kinect.isConnected() && lastface!=kinect.getFraceNr()){
 			lastface=kinect.getFraceNr();
 			sourceCloud=kinect.getLatestFace();
+			DemoVisualizer::transformFaceToNormal(sourceCloud);
 			visualizer.setSourcePC(sourceCloud);
 		}
 		if(lastrequestedTransofmation< visualizer.getRequestedTransformations()){

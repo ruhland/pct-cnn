@@ -19,6 +19,8 @@ class DemoVisualizer  {
 		static void moveToCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
 		static void rotateXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 				float xdegrees,float ydegrees,float zdegrees) ;
+		static void transformFaceToNormal(
+				pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc) ;
 		inline int getRequestedTransformations(){return requestedTransformations;}
 	private:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source;

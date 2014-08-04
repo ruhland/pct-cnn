@@ -439,7 +439,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         boost::shared_ptr<Configuration> configuration)
     {
       typename PointCloud<PointT>::Ptr result (new PointCloud<PointT>);
-      float resultErrorRate = 200;
+      float resultErrorRate = 400;
 
       PointCloud<PointXYZRGB>::Ptr sourceFiltered(new PointCloud<PointXYZRGB>);
       PointCloud<PointXYZRGB>::Ptr targetFiltered(new PointCloud<PointXYZRGB>);
