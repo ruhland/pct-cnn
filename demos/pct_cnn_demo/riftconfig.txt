@@ -1,7 +1,9 @@
-FilterMethod VOXELGRIDFILTER # Options NOFILTER, VOXELGRIDFILTER
-NearestNeighborsToSearch 8 # Nearest Neighbors in other cloud to consider
+Filter VOXELGRID # Options NOFILTER, VOXELGRIDFILTER
+neighborsh 8 # Nearest Neighbors in other cloud to consider
 FILTERLEAFSIZE 0.012 # Leaf Size for VOXEL Grid Filter
-FeatureFormat RIFTFEATURE # XYZRGBFEATRUE PERFECTFEATURE 
-normalradius 0.02
-pfhradius 0.01
-markerrors no
+Feature RIFT # XYZRGBFEATRUE PERFECTFEATURE 
+
+degreesteps 360
+
+normalradius 0.07
+markerrors yes

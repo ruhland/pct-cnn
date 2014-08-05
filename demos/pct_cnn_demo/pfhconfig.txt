@@ -1,9 +1,18 @@
-FilterMethod VOXELGRIDFILTER # Options NOFILTER, VOXELGRIDFILTER
-NearestNeighborsToSearch 10 # Nearest Neighbors in other cloud to consider
-FILTERLEAFSIZE 0.01 # Leaf Size for VOXEL Grid Filter
-FeatureFormat PFHFEATURE # XYZRGBFEATRUE PERFECTFEATURE 
-normalradius 0.08
-pfhradius 0.06
-markerrors yes
+# the cloud filtering method. (Options are: NONE, VOXELGRID)
+filter voxelgrid
+# the leaf size for the voxel grid. (float)
+filterleafsize 0.015
+# number of neighbors for the nearest neighbor search. (int)
+neighbors 5
+# the type used for feature estimation. (Options are: PERFECT, XYZRGB, PFH)
+feature pfh
+
+# radius for the normal search
+normalradius 0.04
+
+pfhradius 0.0999999999
+
+markerrors no
 degreesteps 360
-refinescoresiteration 2 
+refinescoresiteration 0
+targetrotatex 90

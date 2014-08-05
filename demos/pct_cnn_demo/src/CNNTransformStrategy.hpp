@@ -1,11 +1,10 @@
-#ifndef SNNTransformStrategy_HPP
-#define SNNTransformStrategy_HPP
+#ifndef CNNTRANSFORMSTRATEGY_HPP_
+#define CNNTRANSFORMSTRATEGY_HPP_
 
 #define PCL_NO_PRECOMPILE
 
 #include "TransformStrategy.hpp"
 
-// STL
 #include <queue>
 #include <iostream>
 #include <string>
@@ -13,13 +12,10 @@
 #include <algorithm>
 #include <cmath>
 
-// Boost
 #include <boost/timer.hpp>
 
-// OpenCV
 #include <opencv/cv.h>
 
-// PCL
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/common/intensity.h>
@@ -43,6 +39,8 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 
+#include "Util.hpp"
+
 namespace pcl {
   typedef union {
     struct {
@@ -55,6 +53,8 @@ namespace pcl {
     uint32_t long_value;
   } RGBValue;
 }
+
+using namespace pcl::console;
 
 template<typename PointT>
 class CNNTransformStrategy : public TransformStrategy<PointT>
@@ -88,6 +88,11 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         bool operator== (const PointWithScore &rp) const {
           return index == rp.index && score == rp.score;
         }
+
+        friend std::ostream& operator<< (std::ostream& os, const PointWithScore& p) {
+          os << "[ index:" << p.index << ", score:" << p.score << " ]";
+          return os;
+        }
     };
 
     /** \brief Calculate normals for every point in the given cloud.
@@ -102,19 +107,18 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       {
         NormalEstimation<PointT, NormalT> nest;
 
-        cout << "[" << __func__ << "] Input cloud "
-          << cloud->points.size() << " points" << endl;
-
-        cout << "[CNNTransformationStrategy::createNormals] Setting search "
-          << "radius: " << normal_radius << endl;
+        INFO("Setting input cloud: %d points.", cloud->points.size());
+        INFO("Setting search radius: %f.", normal_radius);
 
         nest.setInputCloud(cloud);
         nest.setSearchMethod(typename search::KdTree<PointT>::Ptr(new search::KdTree<PointT>));
         nest.setRadiusSearch(normal_radius);
+
+        boost::timer t;
+
         nest.compute(*normals);
 
-        cout << "[CNNTransformationStrategy::createNormals] Found "
-          << normals->size()  << " normals" << endl;
+        INFO("Found %d normals. (%.2f sec)", normals->size(), t.elapsed());
 
         for (int i = 0; i < normals->size(); i++) {
           if (!pcl::isFinite<pcl::Normal>((*normals)[i])) {
@@ -170,12 +174,12 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         << " gradients in " << t.elapsed() << " seconds. " << endl;
     }
 
-    void filter(typename PointCloud<PointT>::Ptr cloud,
+    void voxelGridFilter(typename PointCloud<PointT>::Ptr cloud,
         typename PointCloud<PointT>::Ptr cloud_filtered,
         float leaf_size = 0.01f)
     {
-      cout << "[CNNTransformationStrategy::filter] Input cloud: "
-        << cloud->points.size() << " points" << endl;
+      int points = cloud->size();
+      INFO("Setting input cloud: %d points.", cloud->points.size());
 
       typename PointCloud<PointT>::Ptr tmp_ptr1(new PointCloud<PointT>);
 
@@ -184,20 +188,19 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       vox_grid.setSaveLeafLayout(true);
       vox_grid.setLeafSize(leaf_size, leaf_size, leaf_size);
 
-      cout << "[CNNTransformationStrategy::filter] Creating a voxel grid. "
-        << "Leaf size: [" << leaf_size << ", " << leaf_size
-        << ", " << leaf_size << "]" << endl;
+      INFO("Creating voxel grid with leaf_size = %f.", leaf_size);
 
-      // Skip the rest...
-      // vox_grid.filter(*tmp_ptr1);
       vox_grid.filter(*cloud_filtered);
 
-      cout << "[CNNTransformationStrategy::filter] Result of voxel grid"
-        << " filtering:" << cloud_filtered->points.size()
-        << " points remaining" << endl;
+      boost::timer t;
+      int points_new = cloud_filtered->size();
+
+      INFO("Filtered %d/%d points (%.2f%%). (%.2f sec)",
+          points-points_new, points, (float) (points-points_new)/points*100,
+          t.elapsed());
 
       return;
-    };
+    }
 
     void computePFHFeatures(PointCloud<PointXYZRGB>::Ptr const &points,
         PointCloud<Normal>::Ptr const &normals,
@@ -212,14 +215,15 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
       pfh_est.setInputCloud(points);
       pfh_est.setInputNormals(normals);
 
-      cout << "[CNNTransformStrategy::computePFHFeatures]"
-        << " Setting input cloud: " << points->size() << " points" << endl;
-      cout << "[CNNTransformStrategy::computePFHFeatures]"
-        << " Setting input normals: " << normals->size() << " normals"
-        << endl;
-      cout << "[CNNTransformStrategy::computePFHFeatures]"
-        << " Feature radius = " << feature_radius << endl;
+      INFO("Setting input cloud: %d points.", points->size());
+      INFO("Setting input normals: %d normals.", normals->size());
+      INFO("Setting feature radius: %f.", feature_radius);
+
+      boost::timer t;
       pfh_est.compute(*descriptors);
+
+      INFO("Computed %d descriptors (%.2f sec)",
+          descriptors->size(), t.elapsed());
     };
 
     template<typename FeatureT>
@@ -291,15 +295,14 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
      */
     template<typename FeatureT>
       void
-      findCoherentNeighbors(typename PointCloud<FeatureT>::Ptr source_features,
+      findNearestNeighbors(typename PointCloud<FeatureT>::Ptr source_features,
           typename PointCloud<FeatureT>::Ptr target_features,
-          vector<vector<PointWithScore>> &coherent_neighbours,
-          int k = 5)
+          vector<vector<PointWithScore>> &coherent_neighbours, int k)
       {
         coherent_neighbours.resize(source_features->size());
 
-        cout << "[CNNTransformStrategy::findCoherentNeighbors] "
-          << "Starting neighbor search..." << endl;
+        INFO("Using %d source features.", source_features->size());
+        INFO("Using %d target features.", target_features->size());
 
         pcl::KdTreeFLANN<FeatureT> searchtree;
         searchtree.setInputCloud(target_features);
@@ -312,15 +315,14 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         for (size_t i = 0; i < source_features->size(); i++) {
           searchtree.nearestKSearch(*source_features, i, k, k_indices, k_squared_distances);
           for (int y = 0; y < k; y++) {
-            PointWithScore a(k_indices[y], 1/k_squared_distances[y]);
+            PointWithScore a(k_indices[y], 1.0 / k_squared_distances[y]);
             coherent_neighbours[i].push_back(a);
           }
           sort(coherent_neighbours[i].begin(), coherent_neighbours[i].end());
         }
 
-        cout << "[CNNTransformStrategy::findCoherentNeighbors] "
-          << "Neighbor search done. Found " << k * source_features->size() 
-          << " neighbors in " << t.elapsed() << " seconds" << endl;
+        INFO("Found %d  neighbors (%.2f sec)", k * source_features->size(),
+            t.elapsed());
       }
 
     /**
@@ -331,7 +333,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
     void
       findPerfectCoherentNeighbours(PointCloud<PointXYZRGB>::Ptr source_features,
           PointCloud<PointXYZRGB>::Ptr target_features,
-          vector<vector<PointWithScore>> &coherent_neighbours,int k=5)
+          vector<vector<PointWithScore>> &coherent_neighbours, int k)
       {
         coherent_neighbours.resize(source_features->size());
         for (size_t i = 0; i < source_features->size(); i++) {
@@ -344,13 +346,13 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
     void replaceColors(PointCloud<PointXYZRGB>::Ptr &src,
         PointCloud<PointXYZRGB>::Ptr &target,
-        vector<vector<PointWithScore>> &coherent_neighbors)
+        vector<vector<PointWithScore>> &coherent_neighbors,
+        bool mark_non_perfect = false)
     {
       RGBValue red;
-      red.Red=0xff;
-      red.Alpha=0;
-      red.Blue=0;
-      red.Green=0;
+      red.long_value = 0;
+      red.Red =  0xff;
+
       for (int i = 0; i < src->size(); i++) {
         pcl::PointXYZRGB& ps = src->points[i];
         if (i > coherent_neighbors.size()
@@ -360,33 +362,40 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         }
         std::sort(coherent_neighbors[i].begin(), coherent_neighbors[i].end());
         int targetpoint = coherent_neighbors[i].back().index;
+
         if (targetpoint < 0 || targetpoint >= target->size()) {
-          std::cout << " ERROR targetpoint " << targetpoint
-            << " out of range" << std::endl;
+          ERROR("targetpoint %d out of range.", targetpoint);
           targetpoint = 1;
         }
+
         pcl::PointXYZRGB& pt = target->points[targetpoint];
 
-        ps.rgba = pt.rgba;
+        if (mark_non_perfect && targetpoint != i) {
+          ps.rgba = 0xff0000ff;
+        } else {
+          ps.rgba = pt.rgba;
+        }
       }
     }
 
-    float getMeanSquaredFaceError(vector<vector<PointWithScore>> &coherentNeighbors) {
+    float getMeanSquaredFaceError(const vector<vector<PointWithScore>> &coherent_neighbors) {
       float error = 0;
-      for(int s = 0; s < coherentNeighbors.size(); s++) {
-        if(coherentNeighbors[s].size() == 0) {
+      float counter = 0;
+      for(int s = 0; s < coherent_neighbors.size(); s++) {
+        if(coherent_neighbors[s].size() == 0)
           continue;
-        }
-        int t = coherentNeighbors[s].back().index;
+        int t = coherent_neighbors[s].back().index;
         error += (s-t)*(s-t);
+        counter++;
       }
-      return error;
+      return error/counter;
     }
 
     float refineScores(vector<vector<PointWithScore>> &source_neighbours,
         vector<vector<PointWithScore>> &target_neighbours, int k,
-        bool delete_with_no_match=false) {
-      int missing_matches = 0;
+        bool delete_with_no_match = false)
+    {
+      int missing = 0;
 
       // Step through the vectors of nearest neighbours (in the target cloud)
       // of every source cloud point.
@@ -416,17 +425,15 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
           }
         }
         if (!found_match) {
-          if (delete_with_no_match) {
+          if (delete_with_no_match)
             s_neighbours.clear();
-          }
-          missing_matches++;
+          missing++;
         }
       }
-      float missingmatches = (missing_matches * 100.0f)
-        / source_neighbours.size();
-      cout << "Found no matches for " << missing_matches << " points. ("
-        << missingmatches << "%)" << endl;
-      return missingmatches;
+      float mpercent = (missing * 100.0f) / source_neighbours.size();
+      INFO("Found no matches for %d points. (%0.2f %%)", missing, mpercent);
+
+      return mpercent;
     }
 
   public:
@@ -436,26 +443,30 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
         boost::shared_ptr<Configuration> configuration)
     {
       typename PointCloud<PointT>::Ptr result (new PointCloud<PointT>);
-      float resultErrorRate = 400;
+      // TODO: I have no idea why we need this result_error_rate. Remove?
+      float result_error_rate = 400;
 
-      PointCloud<PointXYZRGB>::Ptr sourceFiltered(new PointCloud<PointXYZRGB>);
-      PointCloud<PointXYZRGB>::Ptr targetFiltered(new PointCloud<PointXYZRGB>);
+      PointCloud<PointXYZRGB>::Ptr source_filtered(new PointCloud<PointXYZRGB>);
+      PointCloud<PointXYZRGB>::Ptr target_filtered(new PointCloud<PointXYZRGB>);
 
       PointCloud<IntensityGradient>::Ptr source_gradients(new PointCloud<IntensityGradient>);
       PointCloud<IntensityGradient>::Ptr target_gradients(new PointCloud<IntensityGradient>);
 
       if (configuration->getFilterMethod() == VOXELGRIDFILTER) {
-        filter(source, sourceFiltered, configuration->getFilterLeafSize());
-        filter(target, targetFiltered, configuration->getFilterLeafSize());
-      }
-      else {
-        sourceFiltered = source;
-        targetFiltered = target;
+        voxelGridFilter(source, source_filtered, configuration->getFilterLeafSize());
+        voxelGridFilter(target, target_filtered, configuration->getFilterLeafSize());
+      } else {
+        source_filtered = source;
+        target_filtered = target;
       }
 
-      for (float xdegree = 0; xdegree < 360.0f; xdegree+=configuration->getInt("degreesteps", 5)) {
-        for (float ydegree = 0; ydegree < 360.0f; ydegree+=configuration->getInt("degreesteps", 5)) {
-          for (float zdegree = 0; zdegree < 360.0f; zdegree+=configuration->getInt("degreesteps", 5)) {
+      int step = configuration->getInt("degreesteps", 5);
+      float r_norm = configuration->getFloat("normalradius");
+      float r_pfh = configuration->getFloat("pfhradius");
+
+      for (float angle_x = 0; angle_x < 360; angle_x += step) {
+        for (float angle_y = 0; angle_y < 360; angle_y += step) {
+          for (float angle_z = 0; angle_z < 360; angle_z += step) {
             PointCloud<Normal>::Ptr source_normals(new PointCloud<Normal>);
             PointCloud<Normal>::Ptr target_normals(new PointCloud<Normal>);
             PointCloud<PFHSignature125>::Ptr source_descriptors(
@@ -465,91 +476,83 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
 
             int k = configuration->getNearestNeighborsToSearch();
 
-            vector<vector<PointWithScore>> coherentNeighboursSource;
-            vector<vector<PointWithScore>> coherentNeighboursTarget;
+            vector<vector<PointWithScore>> cnn_source;
+            vector<vector<PointWithScore>> cnn_target;
 
             switch (configuration->getFeatureFormat()) {
               case PFHFEATURE:
-                std::cout
-                  << "[CNNTransformStrategy::transform] Using PFH features."
-                  << std::endl;
-                createNormals<Normal>(targetFiltered, target_normals,
-                    configuration->getFloat("normalradius"));
-                createNormals<Normal>(sourceFiltered, source_normals,
-                    configuration->getFloat("normalradius"));
-                computePFHFeatures(sourceFiltered, source_normals,
-                    source_descriptors,
-                    configuration->getFloat("pfhradius"));
-                computePFHFeatures(targetFiltered, target_normals,
-                    target_descriptors,
-                    configuration->getFloat("pfhradius"));
-                findCoherentNeighbors<PFHSignature125>(source_descriptors,
-                    target_descriptors, coherentNeighboursSource, k);
-                findCoherentNeighbors<PFHSignature125>(target_descriptors,
-                    source_descriptors, coherentNeighboursTarget, k);
+                INFO("Using PFH features");
+                createNormals<Normal>(target_filtered, target_normals, r_norm);
+                createNormals<Normal>(source_filtered, source_normals, r_norm);
+                computePFHFeatures(source_filtered, source_normals,
+                    source_descriptors, r_pfh);
+                computePFHFeatures(target_filtered, target_normals,
+                    target_descriptors, r_pfh);
+                findNearestNeighbors<PFHSignature125>(source_descriptors,
+                    target_descriptors, cnn_source, k);
+                findNearestNeighbors<PFHSignature125>(target_descriptors,
+                    source_descriptors, cnn_target, k);
                 break;
               case RIFTFEATURE:
-                std::cout << "[CNNTransformStrategy::transform] Using RIFT features." << std::endl;
-                createNormals<Normal>(sourceFiltered, source_normals, configuration->getFloat("normalradius"));
-                createNormals<Normal>(targetFiltered, target_normals, configuration->getFloat("normalradius"));
-                createGradients(sourceFiltered, source_normals, source_gradients);
-                createGradients(targetFiltered, target_normals, target_gradients);
-                computeRIFTFeatures<PFHSignature125>(sourceFiltered, source_gradients, source_descriptors);
-                computeRIFTFeatures<PFHSignature125>(targetFiltered, target_gradients, target_descriptors);
-                findCoherentNeighbors<PFHSignature125>(source_descriptors, target_descriptors, coherentNeighboursSource, k);
+                INFO("Using RIFT features.");
+                createNormals<Normal>(source_filtered, source_normals, r_norm);
+                createNormals<Normal>(target_filtered, target_normals, r_norm);
+                createGradients(source_filtered, source_normals, source_gradients);
+                createGradients(target_filtered, target_normals, target_gradients);
+                computeRIFTFeatures<PFHSignature125>(source_filtered, source_gradients, source_descriptors);
+                computeRIFTFeatures<PFHSignature125>(target_filtered, target_gradients, target_descriptors);
+                findNearestNeighbors<PFHSignature125>(source_descriptors, target_descriptors, cnn_source, k);
+                break;
               case XYZRGBFEATURE:
-                std::cout
-                  << "[CNNTransformStrategy::transform] Using xyzrgb points directly as features."
-                  << std::endl;
-                findCoherentNeighbors<PointT>(sourceFiltered, targetFiltered,
-                    coherentNeighboursSource, k);
-                findCoherentNeighbors<PointT>(targetFiltered, sourceFiltered,
-                    coherentNeighboursTarget, k);
+                INFO("Using XYZRGP values as features.");
+                findNearestNeighbors<PointT>(source_filtered, target_filtered,
+                    cnn_source, k);
+                findNearestNeighbors<PointT>(target_filtered, source_filtered,
+                    cnn_target, k);
                 break;
               case PERFECTFEATURE:
-                std::cout
-                  << "[CNNTransformStrategy::transform] Using perfect point matching."
-                  << std::endl;
-                std::cout
-                  << "  Warning: This can only be used with preconstructed sample faces."
-                  << std::endl;
-                findPerfectCoherentNeighbours(sourceFiltered, targetFiltered,
-                    coherentNeighboursSource, k);
-                findPerfectCoherentNeighbours(targetFiltered, sourceFiltered,
-                    coherentNeighboursTarget, k);
+                INFO("Using perfect point matching.");
+                INFO("This should only be used with the given sample faces.");
+                findPerfectCoherentNeighbours(source_filtered, target_filtered,
+                    cnn_source, k);
+                findPerfectCoherentNeighbours(target_filtered, source_filtered,
+                    cnn_target, k);
                 break;
               default:
-                std::cout
-                  << "[CNNTransformStrategy::transform] Feature Format not set."
-                  << std::endl;
+                INFO("Feature type not set.");
             }
-            float errorrate=300.0f;
-            for (int i = 0;
-                i < configuration->getInt("refinescoresiteration", 1);
-                i++) {
+            float errorrate = 300;
+            int iterations = configuration->getInt("refinescoresiteration");
+
+            if (iterations == 0) {
+              INFO("Skipping forward-backward search.");
+              INFO("Face MSE: %f", getMeanSquaredFaceError(cnn_source));
+            }
+
+            for (int i = 0; i < iterations; i++) {
               float errorbefore = getMeanSquaredFaceError(
-                  coherentNeighboursSource);
-              errorrate=refineScores(coherentNeighboursSource, coherentNeighboursTarget,
-                  k, configuration->getBool("markerrors"));
-              refineScores(coherentNeighboursTarget, coherentNeighboursSource,
-                  k, configuration->getBool("markerrors"));
-              std::cout << "Face Error before: " << errorbefore
-                << " after refine: "
-                << getMeanSquaredFaceError(coherentNeighboursSource)
-                << std::endl;
+                  cnn_source);
+              errorrate = refineScores(cnn_source, cnn_target, k,
+                  configuration->getBool("markerrors"));
+              refineScores(cnn_target, cnn_source, k,
+                  configuration->getBool("markerrors"));
+              INFO("Face MSE before: %f, after: %f", errorbefore, 
+                  getMeanSquaredFaceError(cnn_source));
             }
-            std::cout<<" Rotate target X:"<<xdegree<<" Y: "<<ydegree<<" Z: "<<zdegree<<" degree"<<std::endl;
-            if(errorrate<resultErrorRate){
-              result = sourceFiltered;
-              replaceColors(result, targetFiltered, coherentNeighboursSource);
-              resultErrorRate=errorrate;
+            INFO("Rotate target x:%f, y:%f, z:%f", angle_x, angle_y, angle_z);
+            if(errorrate < result_error_rate){
+              result = source_filtered;
+              bool mark_non_perfect = configuration->getBool("marknonperfect");
+              replaceColors(result, target_filtered, cnn_source, mark_non_perfect);
+              result_error_rate = errorrate;
             }
-            DemoVisualizer::rotateXYZ(targetFiltered,xdegree,ydegree,	zdegree);
+            DemoVisualizer::rotateXYZ(target_filtered, angle_x,angle_y, angle_z);
           }
         }
       }
 
-      std::cout<<" Lowest Error rate:"<<resultErrorRate<<std::endl;
+      INFO("Lowest error rate: %f", result_error_rate);
+
       return result;
     }
 };
