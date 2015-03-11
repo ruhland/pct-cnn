@@ -1,12 +1,14 @@
-filter voxelgrid # Options NOFILTER, VOXELGRIDFILTER
-neighbors 5 # Nearest Neighbors in other cloud to consider
+filter none # Options none, VOXELGRID
+neighbors 1
 filterleafsize 0.02 # Leaf Size for VOXEL Grid Filter
 feature xyzrgb # XYZRGBFEATRUE PERFECTFEATURE 
 pfhradius 0.08
 normalradius 0.02
-markerrors yes
+markerrors no
 degreesteps 360
-refinescoresiteration 0
-#targetrotatex 90
-#targetrotatey 50.0
+#marknonperfect yes
+refinescoresiteration 1
+targetrotatex 45
+targetrotatey 45.0
 #targetrotatez 100.0
+#screenshotmode true

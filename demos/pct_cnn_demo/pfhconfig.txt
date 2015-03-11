@@ -14,5 +14,7 @@ pfhradius 0.0999999999
 
 markerrors no
 degreesteps 360
-refinescoresiteration 0
-targetrotatex 90
+refinescoresiteration 1
+#targetrotatex 90
+targetrotatey 90
+screenshotmode true

@@ -419,7 +419,7 @@ class CNNTransformStrategy : public TransformStrategy<PointT>
               // Add the position in the neighbor list to the score.
               // (Higher Position => higher score)
               int pos = find(t_neighbours.begin(), t_neighbours.end(), t_neighbour) - t_neighbours.begin();
-              s_neighbour.score *= (pos + 1);
+              s_neighbour.score *= (pos + 2);
               found_match = true;
             }
           }

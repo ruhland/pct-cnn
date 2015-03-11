@@ -10,6 +10,7 @@ class DemoVisualizer  {
 		void setSourcePC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
 		void setTargetPC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
 		void setTransformedPC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
+		void screenshot(pcl::PointCloud<pcl::PointXYZRGB>::Ptr);
 		void show();
 		void close();
 		/*--- wrapped function calls --*/

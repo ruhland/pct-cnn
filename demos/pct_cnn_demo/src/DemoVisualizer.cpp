@@ -23,8 +23,13 @@ void DemoVisualizer::keyboardEventOccurred(
 		const pcl::visualization::KeyboardEvent& event) {
 	if (event.getKeySym() == "space" && event.keyDown())
 		requestedTransformations++;
-	if (event.getKeyCode() == 'l')
-		sourceLocked = true;
+	if (event.getKeyCode() == 'l' && event.keyDown()){
+		sourceLocked = !sourceLocked;
+		if(sourceLocked)
+			std::cout << "Viewer Source is now locked" << std::endl;
+		else
+			std::cout << "Viewer Source is now unlocked" << std::endl;
+	}
 }
 
 std::string const DemoVisualizer::pcSource = "SourcePointCloud";
@@ -64,6 +69,24 @@ void DemoVisualizer::setSourcePC(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
 	viewer.addPointCloud(cloud_source, pcSource, vp1);
 	viewer.setPointCloudRenderingProperties(
 			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, pcSource);
+}
+
+void DemoVisualizer::screenshot(pcl::PointCloud<pcl::PointXYZRGB>::Ptr arg) {
+	int viewport=42;
+	pcl::visualization::PCLVisualizer viewerscreenshot("screenshot");
+	viewerscreenshot.createViewPort(0.0, 0.0, 1.0, 1.0, viewport);
+	std::string cloudname= "tscreenshot";
+	viewerscreenshot.addPointCloud(arg,cloudname,viewport);
+	viewerscreenshot.setPointCloudRenderingProperties(
+				pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, cloudname);
+	viewerscreenshot.setCameraPosition(0, 0, 3, 0, 1, 0, 0);
+	#if PCL_MINOR_VERSION > 6
+		viewerscreenshot.setCameraClipDistances(0.01f, 1.0e10);
+		viewerscreenshot.setSize(1024, 1024); // Visualiser window size
+	#endif
+	viewerscreenshot.spinOnce(1,true);
+	viewerscreenshot.saveScreenshot("screen.png");
+
 }
 
 void DemoVisualizer::scaleToXAxis(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
